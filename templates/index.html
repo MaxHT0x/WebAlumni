@@ -1,0 +1,2685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alumni Data Processing</title>
+    <style>
+        :root {
+            /* Modern color palette */
+            --primary: #4a6fff;
+            --primary-hover: #3a5fee;
+            --primary-light: #eef2ff;
+            --secondary: #0dbc95;
+            --secondary-light: #e6f7f3;
+            --danger: #ff4757;
+            --warning: #ffa502;
+            --success: #0dbc95;
+            --dark: #2d3748;
+            --dark-secondary: #4a5568;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+            
+            /* Border radius */
+            --radius-sm: 0.25rem;
+            --radius-md: 0.375rem;
+            --radius-lg: 0.5rem;
+            --radius-xl: 1rem;
+            --radius-full: 9999px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            font-size: 14px;
+        }
+        
+        /* App layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            height: 100%;
+            box-shadow: var(--shadow-md);
+            z-index: 10;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .logo-icon {
+            background: var(--primary-light);
+            color: var(--primary);
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        .sidebar-menu {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+        
+        /* Upload section */
+        .upload-container {
+            padding: 1.25rem;
+            background: var(--primary-light);
+            border-radius: var(--radius-lg);
+            margin: 0 1rem 1rem;
+            border: 1px dashed var(--primary);
+        }
+        
+        .upload-container h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--primary);
+        }
+        
+        .upload-box {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--gray-200);
+            margin-bottom: 0.75rem;
+        }
+        
+        .upload-box:hover {
+            border-color: var(--primary);
+            background: var(--gray-50);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .upload-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--primary-light);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem;
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+        
+        .upload-box p {
+            font-size: 0.8125rem;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+        }
+        
+        .file-info {
+            padding: 0.75rem;
+            background: white;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 0.75rem;
+            font-size: 0.8125rem;
+            display: none;
+        }
+        
+        .file-info p {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            color: var(--primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+        
+        .file-icon {
+            color: var(--primary);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .content-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .app-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+        
+        .tab-container {
+            display: flex;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .app-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--gray-200);
+            background: white;
+            padding: 0 1.5rem;
+        }
+        
+        .app-tab {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            position: relative;
+            font-weight: 500;
+            color: var(--gray-600);
+            transition: color 0.2s ease;
+            margin-right: 0.5rem;
+            font-size: 0.9375rem;
+        }
+        
+        .app-tab:hover {
+            color: var(--primary);
+        }
+        
+        .app-tab.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .app-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px 2px 0 0;
+        }
+        
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            background: var(--gray-50);
+            height: 100%;
+        }
+        
+        .tab-content.active {
+            display: flex;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+        }
+        
+        .card-header {
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-50);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-title {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+        
+        .card-body {
+            padding: 1.25rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .card-option {
+            margin-bottom: 1rem;
+        }
+        
+        .card-option:last-child {
+            margin-bottom: 0;
+        }
+        
+        .option-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.375rem;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+        
+        /* Form elements */
+        .select-wrapper {
+            position: relative;
+        }
+        
+        .multi-select {
+            width: 100%;
+            height: 125px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            padding: 0.375rem;
+            font-size: 0.875rem;
+            transition: border-color 0.2s ease;
+            background: var(--gray-50);
+            overflow-y: auto;
+        }
+        
+        .multi-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 111, 255, 0.1);
+        }
+        
+        .multi-select option {
+            padding: 0.375rem 0.5rem;
+            margin: 0.125rem 0;
+            border-radius: var(--radius-sm);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            height: 2.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn:hover {
+            background: var(--primary-hover);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-sm {
+            height: 1.875rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+        
+        .btn-block {
+            width: 100%;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+        
+        .btn-success {
+            background: var(--success);
+        }
+        
+        .btn-success:hover {
+            background: var(--success);
+            filter: brightness(0.95);
+        }
+        
+        .btn-icon {
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.375rem;
+        }
+        
+        .radio-group, .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .radio-option, .checkbox-option {
+            display: flex;
+            align-items: center;
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--radius-md);
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .radio-option:hover, .checkbox-option:hover {
+            background: var(--gray-100);
+            border-color: var(--gray-300);
+        }
+        
+        .radio-option.active, .checkbox-option.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+        
+        .radio-option input, .checkbox-option input {
+            margin-right: 0.375rem;
+            accent-color: var(--primary);
+        }
+        
+        .radio-option label, .checkbox-option label {
+            font-size: 0.8125rem;
+            cursor: pointer;
+        }
+        
+        .option-group {
+            margin-bottom: 1rem;
+        }
+        
+        /* Preview section */
+        .preview-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 150px);
+        }
+        
+        .preview-header {
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-50);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        
+        .preview-title {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .preview-icon {
+            color: var(--primary);
+        }
+        
+        .preview-body {
+            padding: 1rem;
+            overflow-y: auto;
+            flex: 1;
+            background: var(--gray-50);
+            height: 200px;
+            min-height: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .preview-content {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            white-space: pre-wrap;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+            color: var(--gray-800);
+            background: white;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        .action-panel {
+            padding: 1rem;
+            border-top: 1px solid var(--gray-200);
+            background: white;
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+        
+        /* Alerts & Notifications */
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            position: relative;
+            border-left: 3px solid transparent;
+            font-size: 0.875rem;
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .alert-success {
+            background-color: var(--secondary-light);
+            border-color: var(--secondary);
+        }
+        
+        .alert-warning {
+            background-color: #fff8e6;
+            border-color: var(--warning);
+        }
+        
+        .alert-danger {
+            background-color: #ffeeee;
+            border-color: var(--danger);
+        }
+        
+        /* Loading indicators */
+        .spinner {
+            border: 3px solid rgba(74, 111, 255, 0.1);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border-left-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            color: var(--gray-600);
+            font-size: 0.875rem;
+        }
+        
+        /* Download section */
+        .download-panel {
+            padding: 1rem;
+            background: #e6f7ff;
+            border-radius: var(--radius-md);
+            border: 1px solid #bae7ff;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .download-title {
+            font-weight: 600;
+            color: #1890ff;
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+        }
+        
+        .download-desc {
+            font-size: 0.8125rem;
+            color: var(--gray-600);
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-backdrop.active .modal {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .modal-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--gray-500);
+            font-size: 1.25rem;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-full);
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: var(--gray-100);
+            color: var(--gray-800);
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+        
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        
+        /* Utilities */
+        .file-input {
+            display: none;
+        }
+        
+        .text-primary {
+            color: var(--primary);
+        }
+        
+        .text-success {
+            color: var(--success);
+        }
+        
+        .text-danger {
+            color: var(--danger);
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+        
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .mb-3 {
+            margin-bottom: 0.75rem;
+        }
+        
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+        
+        .d-flex {
+            display: flex;
+        }
+        
+        .align-center {
+            align-items: center;
+        }
+        
+        .justify-center {
+            justify-content: center;
+        }
+        
+        .justify-between {
+            justify-content: space-between;
+        }
+        
+        .gap-2 {
+            gap: 0.5rem;
+        }
+        
+        .gap-3 {
+            gap: 0.75rem;
+        }
+        
+        .flex-1 {
+            flex: 1;
+        }
+        
+        .collapsible {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            max-height: 0;
+        }
+        
+        .collapsible.expanded {
+            max-height: 500px;
+        }
+        
+        .divider {
+            height: 1px;
+            background: var(--gray-200);
+            margin: 1rem 0;
+        }
+        
+        /* Grid column spans */
+        .col-4 {
+            grid-column: span 4;
+            max-height: calc(100vh - 150px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .col-6 {
+            grid-column: span 6;
+            max-height: calc(100vh - 150px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                gap: 0.75rem;
+            }
+            
+            .col-4 {
+                grid-column: span 6;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 240px;
+            }
+            
+            .col-6 {
+                grid-column: span 12;
+            }
+            
+            .col-4 {
+                grid-column: span 6;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 60px;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            
+            .sidebar.expanded {
+                max-height: 100vh;
+            }
+            
+            .main-content {
+                height: calc(100vh - 60px);
+            }
+            
+            .col-4 {
+                grid-column: span 12;
+            }
+            
+            .dashboard-grid {
+                padding: 0.75rem;
+                gap: 0.75rem;
+            }
+        }
+        
+        /* Credits styling */
+        .credits-link {
+            font-size: 0.6rem;
+            color: var(--gray-400);
+            text-align: center;
+            padding: 0.5rem;
+            margin-top: auto;
+            cursor: pointer;
+            text-decoration: underline;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+        
+        .credits-link:hover {
+            opacity: 1;
+        }
+        
+        .credits-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .credits-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            width: 400px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            animation: fadeIn 0.3s;
+        }
+        
+        .credits-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .credits-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .credits-close {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--gray-500);
+        }
+        
+        .credits-item {
+            margin-bottom: 1rem;
+        }
+        
+        .credits-role {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.2rem;
+        }
+        
+        .credits-name {
+            font-size: 1rem;
+            color: var(--primary);
+            margin-bottom: 0.2rem;
+        }
+        
+        .credits-info {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">A</div>
+                    <span>Alumni Data Tool</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-menu">
+                <!-- Upload section -->
+                <div class="upload-container">
+                    <h3>Upload Excel File</h3>
+                    <div id="uploadBox" class="upload-box">
+                        <div class="upload-icon">📄</div>
+                        <p>Drag and drop your Excel file here</p>
+                        <p>or</p>
+                        <button class="btn btn-sm" id="selectFileBtn">Select File</button>
+                    </div>
+                    
+                    <div id="fileInfo" class="file-info">
+                        <p>
+                            <span class="file-icon">📄</span>
+                            <span>Selected file: <span id="fileName" class="file-name"></span></span>
+                        </p>
+                        <button class="btn btn-sm btn-block" id="uploadBtn">Upload File</button>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" accept=".xls,.xlsx">
+                    
+                    <div id="uploadLoader" class="loader" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Uploading file...</span>
+                    </div>
+                    
+                    <div id="uploadAlert" class="alert" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <div class="credits-link" id="creditsLink">&copy; 2025 | Credits</div>
+        </div>
+        
+        <!-- Main content -->
+        <div class="main-content">
+            <div class="content-header">
+                <h1 class="app-title">Alumni Data Processing Tool</h1>
+            </div>
+            
+            <!-- Tabs navigation -->
+            <div class="app-tabs">
+                <div class="app-tab active" data-tab="qaa">QAA Report</div>
+                <div class="app-tab" data-tab="alumniList">Alumni List</div>
+                <div class="app-tab" data-tab="workplace">Workplace Statistics</div>
+                <div class="app-tab" data-tab="banner">Banner Integration</div>
+            </div>
+            
+            <!-- Tab content -->
+            <div class="tab-content active" id="qaaTab">
+                <div class="dashboard-grid">
+                    <!-- Colleges selection -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Colleges</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Select Colleges:</label>
+                                <div class="select-wrapper">
+                                    <select multiple class="multi-select" id="qaaColleges"></select>
+                                </div>
+                                <button class="btn btn-sm btn-secondary mt-2" id="qaaSelectAllColleges">Select All Colleges</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Years selection -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Graduation Years</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Select Graduation Years:</label>
+                                <div class="select-wrapper">
+                                    <select multiple class="multi-select" id="qaaYears"></select>
+                                </div>
+                                <button class="btn btn-sm btn-secondary mt-2" id="qaaSelectAllYears">Select All Years</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Options -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Filter Options</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Degree Option:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option active">
+                                        <input type="radio" id="qaaBachelor" name="qaaDegree" value="bachelor" checked>
+                                        <label for="qaaBachelor">Bachelor</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="qaaMaster" name="qaaDegree" value="master">
+                                        <label for="qaaMaster">Master</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="qaaAll" name="qaaDegree" value="all">
+                                        <label for="qaaAll">Both</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Gender:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option active">
+                                        <input type="radio" id="qaaGenderAll" name="qaaGender" value="all" checked>
+                                        <label for="qaaGenderAll">All</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="qaaGenderMale" name="qaaGender" value="male">
+                                        <label for="qaaGenderMale">Male</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="qaaGenderFemale" name="qaaGender" value="female">
+                                        <label for="qaaGenderFemale">Female</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Nationality:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option active">
+                                        <input type="radio" id="qaaNationalityAll" name="qaaNationality" value="all" checked>
+                                        <label for="qaaNationalityAll">All</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="qaaNationalitySaudi" name="qaaNationality" value="saudi">
+                                        <label for="qaaNationalitySaudi">Saudi</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="divider"></div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Report Options:</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="qaaCombineAll" name="qaaCombineAll">
+                                        <label for="qaaCombineAll">Combine all results</label>
+                                    </div>
+                                    <div class="checkbox-option active">
+                                        <input type="checkbox" id="qaaCombineYears" name="qaaCombineYears" checked>
+                                        <label for="qaaCombineYears">Combine years</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview card -->
+                    <div class="col-6">
+                        <div class="preview-card">
+                            <div class="preview-header">
+                                <div class="preview-title">
+                                    <span class="preview-icon">👁️</span>
+                                    Preview
+                                </div>
+                            </div>
+                            <div class="preview-body">
+                                <div class="preview-content" id="qaaPreview">Please select colleges and years to see preview.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action panel -->
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Generate Report</div>
+                            </div>
+                            <div class="card-body">
+                                <div id="qaaAlert" class="alert" style="display: none;"></div>
+                                
+                                <div id="qaaLoader" class="loader" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <span>Generating report...</span>
+                                </div>
+                                
+                                <div id="qaaDownload" class="download-panel">
+                                    <h3 class="download-title">Report Generated Successfully</h3>
+                                    <p class="download-desc">Your report is ready for download</p>
+                                    <button class="btn" id="qaaDownloadBtn">Download Report</button>
+                                </div>
+                                
+                                <div class="action-panel">
+                                    <button class="btn btn-success" id="generateQaaBtn">
+                                        <span class="btn-icon">📊</span>
+                                        Generate QAA Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alumni List Tab -->
+            <div class="tab-content" id="alumniListTab">
+                <div class="dashboard-grid">
+                    <!-- Colleges selection -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Colleges</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Select Colleges:</label>
+                                <div class="select-wrapper">
+                                    <select multiple class="multi-select" id="listColleges"></select>
+                                </div>
+                                <button class="btn btn-sm btn-secondary mt-2" id="listSelectAllColleges">Select All Colleges</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Years selection -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Graduation Years</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Select Graduation Years:</label>
+                                <div class="select-wrapper">
+                                    <select multiple class="multi-select" id="listYears"></select>
+                                </div>
+                                <button class="btn btn-sm btn-secondary mt-2" id="listSelectAllYears">Select All Years</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Options -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Filter Options</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Degree Option:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option">
+                                        <input type="radio" id="listBachelor" name="listDegree" value="bachelor">
+                                        <label for="listBachelor">Bachelor</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="listMaster" name="listDegree" value="master">
+                                        <label for="listMaster">Master</label>
+                                    </div>
+                                    <div class="radio-option active">
+                                        <input type="radio" id="listAll" name="listDegree" value="all" checked>
+                                        <label for="listAll">Both</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Gender:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option active">
+                                        <input type="radio" id="listGenderAll" name="listGender" value="all" checked>
+                                        <label for="listGenderAll">All</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="listGenderMale" name="listGender" value="male">
+                                        <label for="listGenderMale">Male</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="listGenderFemale" name="listGender" value="female">
+                                        <label for="listGenderFemale">Female</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Nationality:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option active">
+                                        <input type="radio" id="listNationalityAll" name="listNationality" value="all" checked>
+                                        <label for="listNationalityAll">All</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="listNationalitySaudi" name="listNationality" value="saudi">
+                                        <label for="listNationalitySaudi">Saudi</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="listNationalityNonSaudi" name="listNationality" value="non-saudi">
+                                        <label for="listNationalityNonSaudi">Non-Saudi</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="divider"></div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Status Options:</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-option active">
+                                        <input type="checkbox" id="statusUnemployed" name="statusUnemployed" checked disabled>
+                                        <label for="statusUnemployed">Unemployed</label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="statusEmployed" name="statusEmployed">
+                                        <label for="statusEmployed">Employed - add to list</label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="statusTraining" name="statusTraining">
+                                        <label for="statusTraining">Training</label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="statusBusinessOwner" name="statusBusinessOwner">
+                                        <label for="statusBusinessOwner">Business Owner</label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="statusStudying" name="statusStudying">
+                                        <label for="statusStudying">Studying</label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="statusOthers" name="statusOthers">
+                                        <label for="statusOthers">Others</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview card -->
+                    <div class="col-6">
+                        <div class="preview-card">
+                            <div class="preview-header">
+                                <div class="preview-title">
+                                    <span class="preview-icon">👁️</span>
+                                    Preview
+                                </div>
+                            </div>
+                            <div class="preview-body">
+                                <div class="preview-content" id="listPreview">Please select colleges and years to see preview.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action panel -->
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Generate Alumni List</div>
+                            </div>
+                            <div class="card-body">
+                                <div id="listAlert" class="alert" style="display: none;"></div>
+                                
+                                <div id="listLoader" class="loader" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <span>Generating alumni list...</span>
+                                </div>
+                                
+                                <div id="listDownload" class="download-panel">
+                                    <h3 class="download-title">List Generated Successfully</h3>
+                                    <p class="download-desc">Your alumni list is ready for download</p>
+                                    <button class="btn" id="listDownloadBtn">Download List</button>
+                                </div>
+                                
+                                <div class="action-panel">
+                                    <button class="btn btn-success" id="generateListBtn">
+                                        <span class="btn-icon">👥</span>
+                                        Generate Alumni List
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Workplace Tab -->
+            <div class="tab-content" id="workplaceTab">
+                <div class="dashboard-grid">
+                    <!-- Colleges selection -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Colleges</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Select Colleges:</label>
+                                <div class="select-wrapper">
+                                    <select multiple class="multi-select" id="workplaceColleges"></select>
+                                </div>
+                                <button class="btn btn-sm btn-secondary mt-2" id="workplaceSelectAllColleges">Select All Colleges</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Years selection -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Graduation Years</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Select Graduation Years:</label>
+                                <div class="select-wrapper">
+                                    <select multiple class="multi-select" id="workplaceYears"></select>
+                                </div>
+                                <button class="btn btn-sm btn-secondary mt-2" id="workplaceSelectAllYears">Select All Years</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Options -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Filter Options</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Degree Option:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option">
+                                        <input type="radio" id="workplaceBachelor" name="workplaceDegree" value="bachelor">
+                                        <label for="workplaceBachelor">Bachelor</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="workplaceMaster" name="workplaceDegree" value="master">
+                                        <label for="workplaceMaster">Master</label>
+                                    </div>
+                                    <div class="radio-option active">
+                                        <input type="radio" id="workplaceAll" name="workplaceDegree" value="all" checked>
+                                        <label for="workplaceAll">Both</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Gender:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option active">
+                                        <input type="radio" id="workplaceGenderAll" name="workplaceGender" value="all" checked>
+                                        <label for="workplaceGenderAll">All</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="workplaceGenderMale" name="workplaceGender" value="male">
+                                        <label for="workplaceGenderMale">Male</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="workplaceGenderFemale" name="workplaceGender" value="female">
+                                        <label for="workplaceGenderFemale">Female</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Nationality:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option active">
+                                        <input type="radio" id="workplaceNationalityAll" name="workplaceNationality" value="all" checked>
+                                        <label for="workplaceNationalityAll">All</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="workplaceNationalitySaudi" name="workplaceNationality" value="saudi">
+                                        <label for="workplaceNationalitySaudi">Saudi</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview card -->
+                    <div class="col-6">
+                        <div class="preview-card">
+                            <div class="preview-header">
+                                <div class="preview-title">
+                                    <span class="preview-icon">👁️</span>
+                                    Preview
+                                </div>
+                            </div>
+                            <div class="preview-body">
+                                <div class="preview-content" id="workplacePreview">Please select colleges and years to see preview.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action panel -->
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Generate Workplace Report</div>
+                            </div>
+                            <div class="card-body">
+                                <div id="workplaceAlert" class="alert" style="display: none;"></div>
+                                
+                                <div id="workplaceLoader" class="loader" style="display: none;">
+                                    <div class="spinner"></div>
+                                    <span>Generating workplace report...</span>
+                                </div>
+                                
+                                <div id="workplaceDownload" class="download-panel">
+                                    <h3 class="download-title">Report Generated Successfully</h3>
+                                    <p class="download-desc">Your workplace report is ready for download</p>
+                                    <button class="btn" id="workplaceDownloadBtn">Download Report</button>
+                                </div>
+                                
+                                <div class="action-panel">
+                                    <button class="btn btn-success" id="generateWorkplaceBtn">
+                                        <span class="btn-icon">🏢</span>
+                                        Generate Workplace Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Banner Integration Tab -->
+            <div class="tab-content" id="bannerTab">
+                <div class="dashboard-grid">
+                    <!-- Upload Section -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Upload Files</div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Banner File Upload -->
+                            <div class="upload-section">
+                                <label class="option-label">Banner Graduates File:</label>
+                                <div class="upload-box" id="bannerUploadBox">
+                                    <div class="upload-icon">📄</div>
+                                    <p>Drop your Banner Excel file here or click to browse</p>
+                                    <input type="file" id="bannerFileInput" class="file-input" accept=".xlsx,.xls" style="display: none;">
+                                </div>
+                                <div id="bannerFileInfo" class="file-info">
+                                    <p><span class="file-icon">📎</span><span class="file-name"></span></p>
+                                </div>
+                                <button id="bannerUploadBtn" class="btn btn-primary btn-block" disabled>Upload Banner File</button>
+                                <div id="bannerUploadAlert" class="alert" style="display: none;"></div>
+                            </div>
+
+                            <!-- Alumni File Upload -->
+                            <div class="upload-section" style="margin-top: 20px;">
+                                <label class="option-label">Current Alumni List:</label>
+                                <div class="upload-box" id="alumniUploadBox">
+                                    <div class="upload-icon">📄</div>
+                                    <p>Drop your Alumni Excel file here or click to browse</p>
+                                    <input type="file" id="alumniFileInput" class="file-input" accept=".xlsx,.xls" style="display: none;">
+                                </div>
+                                <div id="alumniFileInfo" class="file-info">
+                                    <p><span class="file-icon">📎</span><span class="file-name"></span></p>
+                                </div>
+                                <button id="alumniUploadBtn" class="btn btn-primary btn-block" disabled>Upload Alumni File</button>
+                                <div id="alumniUploadAlert" class="alert" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Integration Section -->
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Banner Integration</div>
+                            </div>
+                            <div class="card-body">
+                                <button id="processIntegrationBtn" class="btn btn-primary btn-block" disabled>Process Integration</button>
+                                <div id="integrationAlert" class="alert" style="display: none;"></div>
+                                
+                                <!-- Results Section -->
+                                <div id="integrationResults" style="display: none;">
+                                    <div class="stats-grid" style="margin-top: 20px;">
+                                        <div class="stat-item">
+                                            <div class="stat-label">New Records</div>
+                                            <div class="stat-value" id="newRecordsCount">0</div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-label">Banner Records</div>
+                                            <div class="stat-value" id="bannerRecordsCount">0</div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-label">Alumni Records</div>
+                                            <div class="stat-value" id="alumniRecordsCount">0</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- New Students List -->
+                                    <div class="new-students-section" style="margin-top: 20px;">
+                                        <h3>New Students Added</h3>
+                                        <div class="new-students-list" id="newStudentsList" style="max-height: 300px; overflow-y: auto;">
+                                        </div>
+                                    </div>
+
+                                    <!-- Download Section -->
+                                    <div class="download-section" style="margin-top: 20px;">
+                                        <button id="downloadIntegratedBtn" class="btn btn-success btn-block" style="display: none;">
+                                            Download Integrated File
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credits Modal -->
+    <div id="creditsModal" class="credits-modal">
+        <div class="credits-content">
+            <div class="credits-header">
+                <div class="credits-title">Alumni Data Tool Credits</div>
+                <div class="credits-close" id="creditsClose">&times;</div>
+            </div>
+            <div class="credits-body">
+                <div class="credits-item">
+                    <div class="credits-role">Developer</div>
+                    <div class="credits-name">Hamad AlRuwaita</div>
+                    <div class="credits-info">Department of Alumni Relations</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let sessionId = null;
+        let colleges = [];
+        let years = [];
+        let qaaFilename = null;
+        let listFilename = null;
+        let workplaceFilename = null;
+        let bannerIntegrationFilename = null;
+        let bannerSessionId = null;
+        let alumniSessionId = null;
+        
+        // Debounce function for preventing too many preview requests
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Upload section elements
+            const uploadBox = document.getElementById('uploadBox');
+            const fileInput = document.getElementById('fileInput');
+            const selectFileBtn = document.getElementById('selectFileBtn');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadLoader = document.getElementById('uploadLoader');
+            const uploadAlert = document.getElementById('uploadAlert');
+            
+            // Tab elements
+            const appTabs = document.querySelectorAll('.app-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // Radio and checkbox styling
+            const radioOptions = document.querySelectorAll('.radio-option');
+            radioOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    const input = this.querySelector('input[type="radio"]');
+                    input.checked = true;
+                    
+                    // Remove active class from siblings
+                    const name = input.getAttribute('name');
+                    document.querySelectorAll(`.radio-option input[name="${name}"]`).forEach(radio => {
+                        radio.closest('.radio-option').classList.remove('active');
+                    });
+                    
+                    // Add active class to this option
+                    this.classList.add('active');
+                    
+                    // Trigger change event
+                    const event = new Event('change');
+                    input.dispatchEvent(event);
+                });
+            });
+            
+            const checkboxOptions = document.querySelectorAll('.checkbox-option');
+            checkboxOptions.forEach(option => {
+                const input = option.querySelector('input[type="checkbox"]');
+                if (input.checked) {
+                    option.classList.add('active');
+                }
+                
+                if (!input.disabled) {
+                    option.addEventListener('click', function() {
+                        input.checked = !input.checked;
+                        this.classList.toggle('active', input.checked);
+                        
+                        // Trigger change event
+                        const event = new Event('change');
+                        input.dispatchEvent(event);
+                    });
+                }
+            });
+            
+            // Load constants (colleges and years) from the server
+            fetch('/get_constants')
+                .then(response => response.json())
+                .then(data => {
+                    colleges = data.colleges;
+                    years = data.years;
+                    populateSelectOptions();
+                })
+                .catch(error => {
+                    console.error('Error loading constants:', error);
+                });
+            
+            // File selection via button
+            selectFileBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // File drag and drop
+            uploadBox.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadBox.style.borderColor = 'var(--primary)';
+            });
+            
+            uploadBox.addEventListener('dragleave', function() {
+                uploadBox.style.borderColor = 'var(--gray-200)';
+            });
+            
+            uploadBox.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadBox.style.borderColor = 'var(--gray-200)';
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelection();
+                }
+            });
+            
+            // File selection via input
+            fileInput.addEventListener('change', handleFileSelection);
+            
+            function handleFileSelection() {
+                if (fileInput.files.length) {
+                    const file = fileInput.files[0];
+                    if (file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
+                        fileName.textContent = file.name;
+                        fileInfo.style.display = 'block';
+                        uploadAlert.style.display = 'none';
+                    } else {
+                        showUploadAlert('Please select an Excel file (.xls or .xlsx)', 'alert-danger');
+                    }
+                }
+            }
+            
+            // Upload file
+            uploadBtn.addEventListener('click', function() {
+                if (!fileInput.files.length) {
+                    showUploadAlert('Please select a file first', 'alert-danger');
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Show loader
+                uploadLoader.style.display = 'flex';
+                uploadBtn.disabled = true;
+                uploadAlert.style.display = 'none';
+                
+                // Upload the file
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    uploadLoader.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    
+                    if (data.error) {
+                        showUploadAlert(data.error, 'alert-danger');
+                    } else {
+                        // Store the session ID
+                        sessionId = data.session_id;
+                        
+                        // Show success message with stats
+                        let message = `File uploaded successfully. ${data.record_count} records loaded.`;
+                        
+                        if (data.warnings && data.warnings.length) {
+                            message += '<br><br><strong>Warnings:</strong><ul style="margin-left: 1rem;">';
+                            data.warnings.forEach(warning => {
+                                message += `<li>${warning}</li>`;
+                            });
+                            message += '</ul>';
+                            showUploadAlert(message, 'alert-warning');
+                        } else {
+                            showUploadAlert(message, 'alert-success');
+                        }
+                        
+                        // Update tab previews
+                        updateQaaPreview();
+                        updateListPreview();
+                        updateWorkplacePreview();
+                    }
+                })
+                .catch(error => {
+                    uploadLoader.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    showUploadAlert('Error uploading file: ' + error.message, 'alert-danger');
+                });
+            });
+            
+            // Tab switching
+            appTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    appTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update active content
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    document.getElementById(`${tabId}Tab`).classList.add('active');
+                });
+            });
+            
+            // QAA tab elements
+            const qaaColleges = document.getElementById('qaaColleges');
+            const qaaYears = document.getElementById('qaaYears');
+            const qaaSelectAllYears = document.getElementById('qaaSelectAllYears');
+            const qaaSelectAllColleges = document.getElementById('qaaSelectAllColleges');
+            const qaaCombineAll = document.getElementById('qaaCombineAll');
+            const qaaCombineYears = document.getElementById('qaaCombineYears');
+            const generateQaaBtn = document.getElementById('generateQaaBtn');
+            const qaaLoader = document.getElementById('qaaLoader');
+            const qaaAlert = document.getElementById('qaaAlert');
+            const qaaDownload = document.getElementById('qaaDownload');
+            const qaaDownloadBtn = document.getElementById('qaaDownloadBtn');
+            
+            // QAA event listeners
+            qaaColleges.addEventListener('change', debounce(updateQaaPreview, 300));
+            qaaYears.addEventListener('change', debounce(updateQaaPreview, 300));
+            document.querySelectorAll('input[name="qaaDegree"]').forEach(radio => {
+                radio.addEventListener('change', updateQaaPreview);
+            });
+            document.querySelectorAll('input[name="qaaGender"]').forEach(radio => {
+                radio.addEventListener('change', updateQaaPreview);
+            });
+            document.querySelectorAll('input[name="qaaNationality"]').forEach(radio => {
+                radio.addEventListener('change', updateQaaPreview);
+            });
+            
+            // Handle combine options
+            qaaCombineAll.addEventListener('change', function() {
+                if (this.checked) {
+                    qaaCombineYears.checked = false;
+                    document.querySelector(`label[for="qaaCombineYears"]`).closest('.checkbox-option').classList.remove('active');
+                    qaaCombineYears.disabled = true;
+                } else {
+                    qaaCombineYears.disabled = false;
+                }
+            });
+            
+            qaaSelectAllColleges.addEventListener('click', function() {
+                for (let i = 0; i < qaaColleges.options.length; i++) {
+                    qaaColleges.options[i].selected = true;
+                }
+                updateQaaPreview();
+            });
+            
+            qaaSelectAllYears.addEventListener('click', function() {
+                for (let i = 0; i < qaaYears.options.length; i++) {
+                    qaaYears.options[i].selected = true;
+                }
+                updateQaaPreview();
+            });
+            
+            generateQaaBtn.addEventListener('click', generateQaaReport);
+            
+            qaaDownloadBtn.addEventListener('click', function() {
+                if (qaaFilename) {
+                    window.location.href = `/download/${qaaFilename}`;
+                }
+            });
+            
+            // Alumni List tab elements
+            const listColleges = document.getElementById('listColleges');
+            const listYears = document.getElementById('listYears');
+            const listSelectAllYears = document.getElementById('listSelectAllYears');
+            const listSelectAllColleges = document.getElementById('listSelectAllColleges');
+            const generateListBtn = document.getElementById('generateListBtn');
+            const listLoader = document.getElementById('listLoader');
+            const listAlert = document.getElementById('listAlert');
+            const listDownload = document.getElementById('listDownload');
+            const listDownloadBtn = document.getElementById('listDownloadBtn');
+            
+            // Alumni List event listeners
+            listColleges.addEventListener('change', debounce(updateListPreview, 300));
+            listYears.addEventListener('change', debounce(updateListPreview, 300));
+            document.querySelectorAll('input[name="listDegree"]').forEach(radio => {
+                radio.addEventListener('change', updateListPreview);
+            });
+            document.querySelectorAll('input[name="listGender"]').forEach(radio => {
+                radio.addEventListener('change', updateListPreview);
+            });
+            document.querySelectorAll('input[name="listNationality"]').forEach(radio => {
+                radio.addEventListener('change', updateListPreview);
+            });
+            document.querySelectorAll('input[name^="status"]').forEach(checkbox => {
+                if (checkbox.id !== 'statusUnemployed') { // Don't add listener to disabled checkbox
+                    checkbox.addEventListener('change', updateListPreview);
+                }
+            });
+            
+            listSelectAllColleges.addEventListener('click', function() {
+                for (let i = 0; i < listColleges.options.length; i++) {
+                    listColleges.options[i].selected = true;
+                }
+                updateListPreview();
+            });
+            
+            listSelectAllYears.addEventListener('click', function() {
+                for (let i = 0; i < listYears.options.length; i++) {
+                    listYears.options[i].selected = true;
+                }
+                updateListPreview();
+            });
+            
+            generateListBtn.addEventListener('click', generateAlumniList);
+            
+            listDownloadBtn.addEventListener('click', function() {
+                if (listFilename) {
+                    window.location.href = `/download/${listFilename}`;
+                }
+            });
+            
+            // Workplace tab elements
+            const workplaceColleges = document.getElementById('workplaceColleges');
+            const workplaceYears = document.getElementById('workplaceYears');
+            const workplaceSelectAllYears = document.getElementById('workplaceSelectAllYears');
+            const workplaceSelectAllColleges = document.getElementById('workplaceSelectAllColleges');
+            const generateWorkplaceBtn = document.getElementById('generateWorkplaceBtn');
+            const workplaceLoader = document.getElementById('workplaceLoader');
+            const workplaceAlert = document.getElementById('workplaceAlert');
+            const workplaceDownload = document.getElementById('workplaceDownload');
+            const workplaceDownloadBtn = document.getElementById('workplaceDownloadBtn');
+            
+            // Workplace event listeners
+            workplaceColleges.addEventListener('change', debounce(updateWorkplacePreview, 300));
+            workplaceYears.addEventListener('change', debounce(updateWorkplacePreview, 300));
+            document.querySelectorAll('input[name="workplaceDegree"]').forEach(radio => {
+                radio.addEventListener('change', updateWorkplacePreview);
+            });
+            document.querySelectorAll('input[name="workplaceGender"]').forEach(radio => {
+                radio.addEventListener('change', updateWorkplacePreview);
+            });
+            document.querySelectorAll('input[name="workplaceNationality"]').forEach(radio => {
+                radio.addEventListener('change', updateWorkplacePreview);
+            });
+            
+            workplaceSelectAllColleges.addEventListener('click', function() {
+                for (let i = 0; i < workplaceColleges.options.length; i++) {
+                    workplaceColleges.options[i].selected = true;
+                }
+                updateWorkplacePreview();
+            });
+            
+            workplaceSelectAllYears.addEventListener('click', function() {
+                for (let i = 0; i < workplaceYears.options.length; i++) {
+                    workplaceYears.options[i].selected = true;
+                }
+                updateWorkplacePreview();
+            });
+            
+            generateWorkplaceBtn.addEventListener('click', generateWorkplaceReport);
+            
+            workplaceDownloadBtn.addEventListener('click', function() {
+                if (workplaceFilename) {
+                    window.location.href = `/download/${workplaceFilename}`;
+                }
+            });
+            
+            // Banner Integration Elements
+            const bannerUploadBox = document.getElementById('bannerUploadBox');
+            const bannerFileInput = document.getElementById('bannerFileInput');
+            const bannerFileInfo = document.getElementById('bannerFileInfo');
+            const bannerUploadBtn = document.getElementById('bannerUploadBtn');
+            const bannerUploadAlert = document.getElementById('bannerUploadAlert');
+
+            const alumniUploadBox = document.getElementById('alumniUploadBox');
+            const alumniFileInput = document.getElementById('alumniFileInput');
+            const alumniFileInfo = document.getElementById('alumniFileInfo');
+            const alumniUploadBtn = document.getElementById('alumniUploadBtn');
+            const alumniUploadAlert = document.getElementById('alumniUploadAlert');
+
+            const processIntegrationBtn = document.getElementById('processIntegrationBtn');
+            const integrationAlert = document.getElementById('integrationAlert');
+            const integrationResults = document.getElementById('integrationResults');
+            const downloadIntegratedBtn = document.getElementById('downloadIntegratedBtn');
+
+            // Banner file upload handlers
+            bannerUploadBox.addEventListener('click', () => bannerFileInput.click());
+            bannerUploadBox.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                bannerUploadBox.classList.add('drag-over');
+            });
+            bannerUploadBox.addEventListener('dragleave', () => {
+                bannerUploadBox.classList.remove('drag-over');
+            });
+            bannerUploadBox.addEventListener('drop', (e) => {
+                e.preventDefault();
+                bannerUploadBox.classList.remove('drag-over');
+                bannerFileInput.files = e.dataTransfer.files;
+                handleBannerFileSelection();
+            });
+            bannerFileInput.addEventListener('change', handleBannerFileSelection);
+
+            // Alumni file upload handlers
+            alumniUploadBox.addEventListener('click', () => alumniFileInput.click());
+            alumniUploadBox.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                alumniUploadBox.classList.add('drag-over');
+            });
+            alumniUploadBox.addEventListener('dragleave', () => {
+                alumniUploadBox.classList.remove('drag-over');
+            });
+            alumniUploadBox.addEventListener('drop', (e) => {
+                e.preventDefault();
+                alumniUploadBox.classList.remove('drag-over');
+                alumniFileInput.files = e.dataTransfer.files;
+                handleAlumniFileSelection();
+            });
+            alumniFileInput.addEventListener('change', handleAlumniFileSelection);
+
+            // Upload handlers
+            bannerUploadBtn.addEventListener('click', uploadBannerFile);
+            alumniUploadBtn.addEventListener('click', uploadAlumniFile);
+            processIntegrationBtn.addEventListener('click', processBannerIntegration);
+            downloadIntegratedBtn.addEventListener('click', () => {
+                if (bannerIntegrationFilename) {
+                    window.location.href = `/download/${bannerIntegrationFilename}`;
+                }
+            });
+
+            function handleBannerFileSelection() {
+                const file = bannerFileInput.files[0];
+                if (file) {
+                    bannerFileInfo.querySelector('.file-name').textContent = file.name;
+                    bannerFileInfo.style.display = 'block';
+                    bannerUploadBtn.disabled = false;
+                    showAlert(bannerUploadAlert, '', '');
+                }
+            }
+
+            function handleAlumniFileSelection() {
+                const file = alumniFileInput.files[0];
+                if (file) {
+                    alumniFileInfo.querySelector('.file-name').textContent = file.name;
+                    alumniFileInfo.style.display = 'block';
+                    alumniUploadBtn.disabled = false;
+                    showAlert(alumniUploadAlert, '', '');
+                }
+            }
+
+            function uploadBannerFile() {
+                const formData = new FormData();
+                formData.append('file', bannerFileInput.files[0]);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showAlert(bannerUploadAlert, data.error, 'alert-danger');
+                    } else {
+                        showAlert(bannerUploadAlert, 'File uploaded successfully!', 'alert-success');
+                        bannerSessionId = data.session_id;
+                        updateProcessButton();
+                    }
+                })
+                .catch(error => {
+                    showAlert(bannerUploadAlert, 'Error uploading file', 'alert-danger');
+                });
+            }
+
+            function uploadAlumniFile() {
+                const formData = new FormData();
+                formData.append('file', alumniFileInput.files[0]);
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showAlert(alumniUploadAlert, data.error, 'alert-danger');
+                    } else {
+                        showAlert(alumniUploadAlert, 'File uploaded successfully!', 'alert-success');
+                        alumniSessionId = data.session_id;
+                        updateProcessButton();
+                    }
+                })
+                .catch(error => {
+                    showAlert(alumniUploadAlert, 'Error uploading file', 'alert-danger');
+                });
+            }
+
+            function updateProcessButton() {
+                processIntegrationBtn.disabled = !(bannerSessionId && alumniSessionId);
+            }
+
+            function processBannerIntegration() {
+                showAlert(integrationAlert, 'Processing integration...', 'alert-info');
+                integrationResults.style.display = 'none';
+                downloadIntegratedBtn.style.display = 'none';
+
+                fetch('/generate_banner_integration', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        banner_session_id: bannerSessionId,
+                        alumni_session_id: alumniSessionId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showAlert(integrationAlert, data.error, 'alert-danger');
+                    } else {
+                        showAlert(integrationAlert, 'Integration completed successfully!', 'alert-success');
+                        displayIntegrationResults(data);
+                    }
+                })
+                .catch(error => {
+                    showAlert(integrationAlert, 'Error processing integration', 'alert-danger');
+                });
+            }
+
+            function displayIntegrationResults(data) {
+                // Update statistics
+                document.getElementById('newRecordsCount').textContent = data.new_records;
+                document.getElementById('bannerRecordsCount').textContent = data.banner_records;
+                document.getElementById('alumniRecordsCount').textContent = data.alumni_records;
+
+                // Display new students list
+                const newStudentsList = document.getElementById('newStudentsList');
+                newStudentsList.innerHTML = '';
+                
+                if (data.new_students && data.new_students.length > 0) {
+                    const ul = document.createElement('ul');
+                    ul.className = 'student-list';
+                    data.new_students.forEach(student => {
+                        const li = document.createElement('li');
+                        li.textContent = `${student[1]} (ID: ${student[0]})`;
+                        ul.appendChild(li);
+                    });
+                    newStudentsList.appendChild(ul);
+                } else {
+                    newStudentsList.innerHTML = '<p>No new students found.</p>';
+                }
+
+                // Show results and download button
+                integrationResults.style.display = 'block';
+                if (data.file) {
+                    bannerIntegrationFilename = data.file;
+                    downloadIntegratedBtn.style.display = 'block';
+                }
+            }
+            
+            // Credits functionality
+            document.getElementById('creditsLink').addEventListener('click', function() {
+                document.getElementById('creditsModal').style.display = 'block';
+            });
+            
+            document.getElementById('creditsClose').addEventListener('click', function() {
+                document.getElementById('creditsModal').style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target == document.getElementById('creditsModal')) {
+                    document.getElementById('creditsModal').style.display = 'none';
+                }
+            });
+        });
+        
+        // Helper functions
+        function showUploadAlert(message, alertClass) {
+            const uploadAlert = document.getElementById('uploadAlert');
+            uploadAlert.innerHTML = message;
+            uploadAlert.className = 'alert ' + alertClass;
+            uploadAlert.style.display = 'block';
+        }
+        
+        function showAlert(alertElement, message, alertClass) {
+            alertElement.innerHTML = message;
+            alertElement.className = 'alert ' + alertClass;
+            alertElement.style.display = 'block';
+        }
+        
+        function populateSelectOptions() {
+            // QAA tab
+            const qaaColleges = document.getElementById('qaaColleges');
+            const qaaYears = document.getElementById('qaaYears');
+            
+            // Alumni List tab
+            const listColleges = document.getElementById('listColleges');
+            const listYears = document.getElementById('listYears');
+            
+            // Workplace tab
+            const workplaceColleges = document.getElementById('workplaceColleges');
+            const workplaceYears = document.getElementById('workplaceYears');
+            
+            // Populate college options
+            colleges.forEach(college => {
+                // QAA tab
+                const qaaOption = document.createElement('option');
+                qaaOption.value = college;
+                qaaOption.textContent = college;
+                qaaColleges.appendChild(qaaOption);
+                
+                // Alumni List tab
+                const listOption = document.createElement('option');
+                listOption.value = college;
+                listOption.textContent = college;
+                listColleges.appendChild(listOption);
+                
+                // Workplace tab
+                const workplaceOption = document.createElement('option');
+                workplaceOption.value = college;
+                workplaceOption.textContent = college;
+                workplaceColleges.appendChild(workplaceOption);
+            });
+            
+            // Populate year options
+            years.forEach(year => {
+                // QAA tab
+                const qaaOption = document.createElement('option');
+                qaaOption.value = year;
+                qaaOption.textContent = year;
+                qaaYears.appendChild(qaaOption);
+                
+                // Alumni List tab
+                const listOption = document.createElement('option');
+                listOption.value = year;
+                listOption.textContent = year;
+                listYears.appendChild(listOption);
+                
+                // Workplace tab
+                const workplaceOption = document.createElement('option');
+                workplaceOption.value = year;
+                workplaceOption.textContent = year;
+                workplaceYears.appendChild(workplaceOption);
+            });
+        }
+        
+        function getSelectedOptions(selectElement) {
+            const selected = [];
+            for (let i = 0; i < selectElement.options.length; i++) {
+                if (selectElement.options[i].selected) {
+                    selected.push(selectElement.options[i].value);
+                }
+            }
+            return selected;
+        }
+        
+        function getSelectedRadioValue(name) {
+            const radio = document.querySelector(`input[name="${name}"]:checked`);
+            return radio ? radio.value : null;
+        }
+        
+        function getCheckedStatusOptions() {
+            const statusOptions = [];
+            if (document.getElementById('statusUnemployed').checked) {
+                statusOptions.push('Unemployed');
+            }
+            if (document.getElementById('statusEmployed').checked) {
+                statusOptions.push('Employed - add to list');
+            }
+            if (document.getElementById('statusTraining').checked) {
+                statusOptions.push('Training');
+            }
+            if (document.getElementById('statusBusinessOwner').checked) {
+                statusOptions.push('Business owner');
+            }
+            if (document.getElementById('statusStudying').checked) {
+                statusOptions.push('Studying');
+            }
+            if (document.getElementById('statusOthers').checked) {
+                statusOptions.push('Others');
+            }
+            return statusOptions;
+        }
+        
+        function updateQaaPreview() {
+            if (!sessionId) return;
+            
+            const qaaColleges = document.getElementById('qaaColleges');
+            const qaaYears = document.getElementById('qaaYears');
+            const qaaPreview = document.getElementById('qaaPreview');
+            
+            const selectedColleges = getSelectedOptions(qaaColleges);
+            const selectedYears = getSelectedOptions(qaaYears);
+            
+            if (!selectedColleges.length || !selectedYears.length) {
+                qaaPreview.textContent = 'Please select colleges and years to see preview.';
+                return;
+            }
+            
+            qaaPreview.textContent = 'Loading preview...';
+            
+            const degreeOption = getSelectedRadioValue('qaaDegree');
+            const genderOption = getSelectedRadioValue('qaaGender');
+            const nationalityOption = getSelectedRadioValue('qaaNationality');
+            
+            fetch('/qaa_preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    colleges: selectedColleges,
+                    years: selectedYears,
+                    degree_option: degreeOption,
+                    gender_option: genderOption,
+                    nationality_option: nationalityOption
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    qaaPreview.textContent = data.error;
+                } else {
+                    let previewText = 'Preview Summary:\n\n';
+                    previewText += `Total Records: ${data.total_records}\n\n`;
+                    
+                    previewText += 'Records per College:\n';
+                    Object.entries(data.college_counts).forEach(([college, count]) => {
+                        previewText += `- ${college}: ${count}\n`;
+                    });
+                    
+                    previewText += '\nStatus Breakdown:\n';
+                    Object.entries(data.status_counts).forEach(([status, count]) => {
+                        previewText += `- ${status}: ${count}\n`;
+                    });
+                    
+                    qaaPreview.textContent = previewText;
+                }
+            })
+            .catch(error => {
+                qaaPreview.textContent = 'Error generating preview: ' + error.message;
+            });
+        }
+        
+        function updateListPreview() {
+            if (!sessionId) return;
+            
+            const listColleges = document.getElementById('listColleges');
+            const listYears = document.getElementById('listYears');
+            const listPreview = document.getElementById('listPreview');
+            
+            const selectedColleges = getSelectedOptions(listColleges);
+            const selectedYears = getSelectedOptions(listYears);
+            
+            if (!selectedColleges.length || !selectedYears.length) {
+                listPreview.textContent = 'Please select colleges and years to see preview.';
+                return;
+            }
+            
+            listPreview.textContent = 'Loading preview...';
+            
+            const degreeOption = getSelectedRadioValue('listDegree');
+            const genderOption = getSelectedRadioValue('listGender');
+            const nationalityOption = getSelectedRadioValue('listNationality');
+            const statusOptions = getCheckedStatusOptions();
+            
+            fetch('/alumni_list_preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    colleges: selectedColleges,
+                    years: selectedYears,
+                    status_options: statusOptions,
+                    degree_option: degreeOption,
+                    gender_option: genderOption,
+                    nationality_option: nationalityOption
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    listPreview.textContent = data.error;
+                } else {
+                    let previewText = 'Preview Summary:\n\n';
+                    previewText += `Total Alumni in List: ${data.total_alumni}\n\n`;
+                    
+                    previewText += 'Alumni per College:\n';
+                    Object.entries(data.college_counts).forEach(([college, count]) => {
+                        previewText += `- ${college}: ${count}\n`;
+                    });
+                    
+                    previewText += '\nGender Distribution:\n';
+                    Object.entries(data.gender_counts).forEach(([gender, count]) => {
+                        previewText += `- ${gender}: ${count}\n`;
+                    });
+                    
+                    listPreview.textContent = previewText;
+                }
+            })
+            .catch(error => {
+                listPreview.textContent = 'Error generating preview: ' + error.message;
+            });
+        }
+        
+        function updateWorkplacePreview() {
+            if (!sessionId) return;
+            
+            const workplaceColleges = document.getElementById('workplaceColleges');
+            const workplaceYears = document.getElementById('workplaceYears');
+            const workplacePreview = document.getElementById('workplacePreview');
+            
+            const selectedColleges = getSelectedOptions(workplaceColleges);
+            const selectedYears = getSelectedOptions(workplaceYears);
+            
+            if (!selectedColleges.length || !selectedYears.length) {
+                workplacePreview.textContent = 'Please select colleges and years to see preview.';
+                return;
+            }
+            
+            workplacePreview.textContent = 'Loading preview...';
+            
+            const degreeOption = getSelectedRadioValue('workplaceDegree');
+            const genderOption = getSelectedRadioValue('workplaceGender');
+            const nationalityOption = getSelectedRadioValue('workplaceNationality');
+            
+            fetch('/workplace_preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    colleges: selectedColleges,
+                    years: selectedYears,
+                    degree_option: degreeOption,
+                    gender_option: genderOption,
+                    nationality_option: nationalityOption
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    workplacePreview.textContent = data.error;
+                } else {
+                    let previewText = 'Workplace Statistics Preview:\n\n';
+                    previewText += `Total Alumni: ${data.total_alumni}\n`;
+                    previewText += `Valid Workplace Entries: ${data.valid_entries}\n`;
+                    previewText += `Empty/Unknown Entries: ${data.empty_entries}\n\n`;
+                    
+                    previewText += 'Empty/Unknown Entry Analysis:\n';
+                    previewText += '----------------------------\n';
+                    Object.entries(data.empty_stats).forEach(([category, count]) => {
+                        previewText += `- ${category}: ${count}\n`;
+                    });
+                    previewText += '\n';
+                    
+                    previewText += 'Top 5 Employers (excluding empty/unknown):\n';
+                    previewText += '----------------------------------------\n';
+                    Object.entries(data.top_employers).forEach(([company, count]) => {
+                        previewText += `- ${company}: ${count}\n`;
+                    });
+                    
+                    previewText += '\nTop 5 Positions:\n';
+                    previewText += '---------------\n';
+                    Object.entries(data.top_positions).forEach(([position, count]) => {
+                        previewText += `- ${position}: ${count}\n`;
+                    });
+                    
+                    previewText += '\nTop 3 Industries:\n';
+                    previewText += '----------------\n';
+                    Object.entries(data.industry_dist).forEach(([industry, count]) => {
+                        previewText += `- ${industry}: ${count}\n`;
+                    });
+                    
+                    workplacePreview.textContent = previewText;
+                }
+            })
+            .catch(error => {
+                workplacePreview.textContent = 'Error generating preview: ' + error.message;
+            });
+        }
+        
+        function generateQaaReport() {
+            if (!sessionId) {
+                showAlert(document.getElementById('qaaAlert'), 'No session available. Please upload a file first.', 'alert-danger');
+                return;
+            }
+            
+            const qaaColleges = document.getElementById('qaaColleges');
+            const qaaYears = document.getElementById('qaaYears');
+            const selectedColleges = getSelectedOptions(qaaColleges);
+            const selectedYears = getSelectedOptions(qaaYears);
+            
+            if (!selectedColleges.length) {
+                showAlert(document.getElementById('qaaAlert'), 'Please select at least one college.', 'alert-warning');
+                return;
+            }
+            
+            if (!selectedYears.length) {
+                showAlert(document.getElementById('qaaAlert'), 'Please select at least one graduation year.', 'alert-warning');
+                return;
+            }
+            
+            // Show loader and hide alerts/download
+            const qaaLoader = document.getElementById('qaaLoader');
+            const qaaAlert = document.getElementById('qaaAlert');
+            const qaaDownload = document.getElementById('qaaDownload');
+            const generateQaaBtn = document.getElementById('generateQaaBtn');
+            
+            qaaLoader.style.display = 'flex';
+            qaaAlert.style.display = 'none';
+            qaaDownload.style.display = 'none';
+            generateQaaBtn.disabled = true;
+            
+            const degreeOption = getSelectedRadioValue('qaaDegree');
+            const combineAll = document.getElementById('qaaCombineAll').checked;
+            const combineYears = document.getElementById('qaaCombineYears').checked;
+            const genderOption = getSelectedRadioValue('qaaGender');
+            const nationalityOption = getSelectedRadioValue('qaaNationality');
+            
+            fetch('/generate_qaa_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    colleges: selectedColleges,
+                    years: selectedYears,
+                    degree_option: degreeOption,
+                    combine_all: combineAll,
+                    combine_years: combineYears,
+                    gender_option: genderOption,
+                    nationality_option: nationalityOption
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                qaaLoader.style.display = 'none';
+                generateQaaBtn.disabled = false;
+                
+                if (data.error) {
+                    showAlert(qaaAlert, data.error, 'alert-danger');
+                } else {
+                    qaaFilename = data.file;
+                    qaaDownload.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                qaaLoader.style.display = 'none';
+                generateQaaBtn.disabled = false;
+                showAlert(qaaAlert, 'Error generating report: ' + error.message, 'alert-danger');
+            });
+        }
+        
+        function generateAlumniList() {
+            if (!sessionId) {
+                showAlert(document.getElementById('listAlert'), 'No session available. Please upload a file first.', 'alert-danger');
+                return;
+            }
+            
+            const listColleges = document.getElementById('listColleges');
+            const listYears = document.getElementById('listYears');
+            const selectedColleges = getSelectedOptions(listColleges);
+            const selectedYears = getSelectedOptions(listYears);
+            
+            if (!selectedColleges.length) {
+                showAlert(document.getElementById('listAlert'), 'Please select at least one college.', 'alert-warning');
+                return;
+            }
+            
+            if (!selectedYears.length) {
+                showAlert(document.getElementById('listAlert'), 'Please select at least one graduation year.', 'alert-warning');
+                return;
+            }
+            
+            // Show loader and hide alerts/download
+            const listLoader = document.getElementById('listLoader');
+            const listAlert = document.getElementById('listAlert');
+            const listDownload = document.getElementById('listDownload');
+            const generateListBtn = document.getElementById('generateListBtn');
+            
+            listLoader.style.display = 'flex';
+            listAlert.style.display = 'none';
+            listDownload.style.display = 'none';
+            generateListBtn.disabled = true;
+            
+            const degreeOption = getSelectedRadioValue('listDegree');
+            const genderOption = getSelectedRadioValue('listGender');
+            const nationalityOption = getSelectedRadioValue('listNationality');
+            const statusOptions = getCheckedStatusOptions();
+            
+            fetch('/generate_alumni_list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    colleges: selectedColleges,
+                    years: selectedYears,
+                    status_options: statusOptions,
+                    degree_option: degreeOption,
+                    gender_option: genderOption,
+                    nationality_option: nationalityOption
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                listLoader.style.display = 'none';
+                generateListBtn.disabled = false;
+                
+                if (data.error) {
+                    showAlert(listAlert, data.error, 'alert-danger');
+                } else {
+                    listFilename = data.file;
+                    listDownload.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                listLoader.style.display = 'none';
+                generateListBtn.disabled = false;
+                showAlert(listAlert, 'Error generating alumni list: ' + error.message, 'alert-danger');
+            });
+        }
+        
+        function generateWorkplaceReport() {
+            if (!sessionId) {
+                showAlert(document.getElementById('workplaceAlert'), 'No session available. Please upload a file first.', 'alert-danger');
+                return;
+            }
+            
+            const workplaceColleges = document.getElementById('workplaceColleges');
+            const workplaceYears = document.getElementById('workplaceYears');
+            const selectedColleges = getSelectedOptions(workplaceColleges);
+            const selectedYears = getSelectedOptions(workplaceYears);
+            
+            if (!selectedColleges.length) {
+                showAlert(document.getElementById('workplaceAlert'), 'Please select at least one college.', 'alert-warning');
+                return;
+            }
+            
+            if (!selectedYears.length) {
+                showAlert(document.getElementById('workplaceAlert'), 'Please select at least one graduation year.', 'alert-warning');
+                return;
+            }
+            
+            // Show loader and hide alerts/download
+            const workplaceLoader = document.getElementById('workplaceLoader');
+            const workplaceAlert = document.getElementById('workplaceAlert');
+            const workplaceDownload = document.getElementById('workplaceDownload');
+            const generateWorkplaceBtn = document.getElementById('generateWorkplaceBtn');
+            
+            workplaceLoader.style.display = 'flex';
+            workplaceAlert.style.display = 'none';
+            workplaceDownload.style.display = 'none';
+            generateWorkplaceBtn.disabled = true;
+            
+            const degreeOption = getSelectedRadioValue('workplaceDegree');
+            const genderOption = getSelectedRadioValue('workplaceGender');
+            const nationalityOption = getSelectedRadioValue('workplaceNationality');
+            
+            fetch('/generate_workplace_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    colleges: selectedColleges,
+                    years: selectedYears,
+                    degree_option: degreeOption,
+                    gender_option: genderOption,
+                    nationality_option: nationalityOption
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                workplaceLoader.style.display = 'none';
+                generateWorkplaceBtn.disabled = false;
+                
+                if (data.error) {
+                    showAlert(workplaceAlert, data.error, 'alert-danger');
+                } else {
+                    workplaceFilename = data.file;
+                    workplaceDownload.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                workplaceLoader.style.display = 'none';
+                generateWorkplaceBtn.disabled = false;
+                showAlert(workplaceAlert, 'Error generating workplace report: ' + error.message, 'alert-danger');
+            });
+        }
+    </script>
+</body>
+</html>

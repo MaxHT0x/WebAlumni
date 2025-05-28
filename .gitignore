@@ -1,0 +1,7 @@
+uploads/
+generated_files/
+.venv/
+__pycache__/
+*.pyc
+.vscode/
+.windsurf/
