@@ -238,6 +238,91 @@ def analyze_unknown_entries(df):
 
     return analysis_df['Empty_Category'].value_counts()
 
+def is_high_position(position):
+    """
+    Determines if a job position is a high-level position.
+    Returns a normalized position name if it's a high position, None otherwise.
+    """
+    if pd.isna(position) or position is None or not isinstance(position, str):
+        return None
+    
+    # Clean and normalize the position string
+    position = position.strip().upper()
+    
+    # Skip empty or placeholder values
+    if not position or position in ['-', 'N/A', 'NA', 'NONE', 'NOT APPLICABLE', 'UNKNOWN']:
+        return None
+    
+    # Define high position keywords with normalization mapping
+    high_position_mapping = {
+        # C-Suite positions
+        'CEO': 'CHIEF EXECUTIVE OFFICER',
+        'CHIEF EXECUTIVE OFFICER': 'CHIEF EXECUTIVE OFFICER',
+        'PRESIDENT': 'PRESIDENT',
+        'CFO': 'CHIEF FINANCIAL OFFICER',
+        'CHIEF FINANCIAL OFFICER': 'CHIEF FINANCIAL OFFICER',
+        'CTO': 'CHIEF TECHNOLOGY OFFICER',
+        'CHIEF TECHNOLOGY OFFICER': 'CHIEF TECHNOLOGY OFFICER',
+        'CIO': 'CHIEF INFORMATION OFFICER',
+        'CHIEF INFORMATION OFFICER': 'CHIEF INFORMATION OFFICER',
+        'COO': 'CHIEF OPERATING OFFICER',
+        'CHIEF OPERATING OFFICER': 'CHIEF OPERATING OFFICER',
+        'CMO': 'CHIEF MARKETING OFFICER',
+        'CHIEF MARKETING OFFICER': 'CHIEF MARKETING OFFICER',
+        'CHIEF': 'CHIEF',  # Generic chief
+        
+        # Director level
+        'DIRECTOR': 'DIRECTOR',
+        'EXECUTIVE DIRECTOR': 'EXECUTIVE DIRECTOR',
+        'MANAGING DIRECTOR': 'MANAGING DIRECTOR',
+        'BOARD MEMBER': 'BOARD MEMBER',
+        
+        # VP level
+        'VP': 'VICE PRESIDENT',
+        'VICE PRESIDENT': 'VICE PRESIDENT',
+        'SVP': 'SENIOR VICE PRESIDENT',
+        'SENIOR VICE PRESIDENT': 'SENIOR VICE PRESIDENT',
+        'EVP': 'EXECUTIVE VICE PRESIDENT',
+        'EXECUTIVE VICE PRESIDENT': 'EXECUTIVE VICE PRESIDENT',
+        
+        # Head positions
+        'HEAD': 'HEAD',
+        'DEPARTMENT HEAD': 'DEPARTMENT HEAD',
+        'DIVISION HEAD': 'DIVISION HEAD',
+        
+        # Senior management
+        'GENERAL MANAGER': 'GENERAL MANAGER',
+        'PARTNER': 'PARTNER',
+        'SENIOR MANAGER': 'SENIOR MANAGER',
+        'PRINCIPAL': 'PRINCIPAL',
+        
+        # Founder positions
+        'FOUNDER': 'FOUNDER',
+        'CO-FOUNDER': 'CO-FOUNDER',
+        'OWNER': 'OWNER'
+    }
+    
+    # Check for exact matches first
+    if position in high_position_mapping:
+        return high_position_mapping[position]
+    
+    # Check for partial matches within the position title
+    for keyword, normalized in high_position_mapping.items():
+        # Use word boundaries to avoid partial word matches
+        # e.g., 'DIRECTOR' should match 'IT DIRECTOR' but not 'DIRECTORY ADMINISTRATOR'
+        pattern = r'\b' + re.escape(keyword) + r'\b'
+        if re.search(pattern, position):
+            # For common positions like HEAD and CHIEF, ensure it's not just part of another word
+            if keyword in ['HEAD', 'CHIEF', 'OWNER'] and len(keyword) < 5:
+                # Additional check to ensure it's actually a leadership position
+                leadership_context = ['OF', 'DEPARTMENT', 'DIVISION', 'TEAM']
+                if any(context in position for context in leadership_context):
+                    return normalized
+            else:
+                return normalized
+    
+    return None
+
 def get_workplace_statistics(df, colleges, years, degree_option, gender_option, nationality_option=None):
     """
     Generate workplace statistics from the given dataframe.
@@ -277,7 +362,17 @@ def get_workplace_statistics(df, colleges, years, degree_option, gender_option, 
     # Get empty value statistics
     empty_stats = empty_df["Normalized_Workplace"].value_counts()
 
-    # Get top positions
+    # Get high positions (new implementation)
+    # First, apply the high position detection function to create a new column
+    filtered_df["High_Position"] = filtered_df["Current Position"].apply(is_high_position)
+    
+    # Filter only entries that have high positions (non-None values)
+    high_position_df = filtered_df[filtered_df["High_Position"].notna()]
+    
+    # Count occurrences of each high position
+    high_positions = high_position_df["High_Position"].value_counts().head(20)
+    
+    # Get original top positions for backward compatibility
     top_positions = filtered_df["Current Position"].value_counts().head(10)
 
     # Calculate nationality distribution (if Nationality column exists)
@@ -303,12 +398,14 @@ def get_workplace_statistics(df, colleges, years, degree_option, gender_option, 
         "top_employers": top_employers.to_dict(),
         "empty_stats": empty_stats.to_dict(),
         "top_positions": top_positions.to_dict(),
+        "high_positions": high_positions.to_dict(),  # New field for high positions
         "nationality_dist": nationality_dist.to_dict(),
         "industry_dist": industry_dist.to_dict(),
         "employment_type_dist": employment_type_dist.to_dict(),
         "total_alumni": len(filtered_df),
         "valid_entries": len(valid_df),
-        "empty_entries": len(empty_df)
+        "empty_entries": len(empty_df),
+        "high_positions_count": len(high_position_df)  # Total count of alumni with high positions
     }
 
 # --------------------
@@ -1023,13 +1120,20 @@ def process_workplace_report(session_id, colleges, years, degree_option, gender_
             employer_sheet.set_column('A:A', 40)
             employer_sheet.set_column('B:B', 15)
 
-            # Top Positions Sheet
-            positions_df = pd.DataFrame.from_dict(stats['top_positions'], orient='index', columns=['Count'])
-            positions_df.index.name = 'Position'
-            positions_df.to_excel(writer, sheet_name='Top Positions')
+            # Top Positions Sheet (replaced with High Positions)
+            high_positions_df = pd.DataFrame.from_dict(stats['high_positions'], orient='index', columns=['Count'])
+            high_positions_df.index.name = 'High Position'
+            high_positions_df.to_excel(writer, sheet_name='Top Positions')
             position_sheet = writer.sheets['Top Positions']
             position_sheet.set_column('A:A', 40)
             position_sheet.set_column('B:B', 15)
+            
+            # Add summary of high positions at the top
+            position_sheet.write(0, 3, 'Total Alumni with High Positions:')
+            position_sheet.write(0, 4, stats['high_positions_count'])
+            position_sheet.write(1, 3, '% of Alumni with High Positions:')
+            high_position_percentage = (stats['high_positions_count'] / stats['total_alumni'] * 100) if stats['total_alumni'] > 0 else 0
+            position_sheet.write(1, 4, f'{high_position_percentage:.2f}%')
 
             # Industry Distribution Sheet
             industry_df = pd.DataFrame.from_dict(stats['industry_dist'], orient='index', columns=['Count'])
@@ -1396,7 +1500,7 @@ def workplace_preview():
         "empty_entries": stats["empty_entries"],
         "empty_stats": {k: stats["empty_stats"][k] for k in list(stats["empty_stats"].keys())[:5]} if stats["empty_stats"] else {},
         "top_employers": {k: stats["top_employers"][k] for k in list(stats["top_employers"].keys())[:5]} if stats["top_employers"] else {},
-        "top_positions": {k: stats["top_positions"][k] for k in list(stats["top_positions"].keys())[:5]} if stats["top_positions"] else {},
+        "top_positions": {k: stats["high_positions"][k] for k in list(stats["high_positions"].keys())[:5]} if stats["high_positions"] else {},
         "industry_dist": {k: stats["industry_dist"][k] for k in list(stats["industry_dist"].keys())[:3]} if stats["industry_dist"] else {}
     }
     
