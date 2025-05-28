@@ -39,7 +39,23 @@ college_options = [
     "College of Pharmacy"
 ]
 
-graduation_years = [
+# Expected Current Status values
+expected_current_status = [
+    "Employed",
+    "Employed - add to list",
+    "Business owner",
+    "Training",
+    "Do not contact",
+    "Others",
+    "Left the country",
+    "Passed away",
+    "Unemployed",
+    "Studying",
+    "New graduate"  # Added for banner integration
+]
+
+# Default fallback graduation years in case dynamic extraction fails
+default_graduation_years = [
     "2010-2011 Spring", "2010-2011 Summer",
     "2011-2012 Spring", "2011-2012 Summer",
     "2012-2013 FALL", "2012-2013 Spring", "2012-2013 Summer",
@@ -56,6 +72,9 @@ graduation_years = [
     "2023-2024 Spring", "2023-2024 FALL", "2023-2024 Summer",
     "2024-2025 FALL"
 ]
+
+# This will be populated dynamically from uploaded Excel files
+graduation_years = []
 
 # --------------------
 # Helper Functions
@@ -376,8 +395,32 @@ def load_excel_data(file_path, session_id):
             df["_Year"] = df["Year/Semester of Graduation"].str.strip()
             df["_CurrentStatus"] = df["Current Status"].str.strip().str.lower().str.capitalize()
 
+        # Extract years from the file
+        years_from_file, year_warnings = extract_graduation_years(file_path)
+        
+        # Add any warnings about year extraction
+        warnings.extend(year_warnings)
+        
+        # Store the data in the session
+        session_data[session_id] = {
+            "data": df,
+            "file_name": os.path.basename(file_path),
+            "timestamp": datetime.now().isoformat(),
+            "is_banner": is_banner_file,
+            "graduation_years": years_from_file
+        }
+        
+        # Update the global graduation_years if we found values
+        global graduation_years
+        if years_from_file and not is_banner_file:  # Don't use years from Banner files
+            graduation_years = years_from_file
+
         # Validate graduation years
-        invalid_years = df[~df["_Year"].isin(graduation_years)]
+        years_to_validate = years_from_file if years_from_file else graduation_years
+        if not years_to_validate:  # If still empty, use defaults
+            years_to_validate = default_graduation_years
+            
+        invalid_years = df[~df["_Year"].isin(years_to_validate)]
         if not invalid_years.empty:
             # Get unique invalid years and convert to list
             unique_invalid_years = invalid_years["_Year"].unique().tolist()
@@ -396,14 +439,19 @@ def load_excel_data(file_path, session_id):
         invalid_colleges = df[~df["_College"].isin(college_options)]
         if not invalid_colleges.empty:
             warnings.append(f"Found {len(invalid_colleges)} records with invalid colleges")
-
-        # Store the data in the session
-        session_data[session_id] = {
-            "data": df,
-            "file_name": os.path.basename(file_path),
-            "timestamp": datetime.now().isoformat(),
-            "is_banner": is_banner_file
-        }
+            
+        # Validate Current Status values if not a Banner file
+        if not is_banner_file and "Current Status" in df.columns:
+            # Normalize the Current Status values for comparison
+            df["_CurrentStatus"] = df["Current Status"].apply(clean_status)
+            
+            # Check for unexpected Current Status values
+            normalized_expected_statuses = [clean_status(status) for status in expected_current_status]
+            unexpected_statuses = df[~df["_CurrentStatus"].isin(normalized_expected_statuses)]
+            
+            if not unexpected_statuses.empty:
+                unexpected_values = unexpected_statuses["_CurrentStatus"].unique().tolist()
+                warnings.append(f"⚠️ ALERT: Found unexpected 'Current Status' values: {unexpected_values}")
 
         # Return some statistics about the loaded data
         stats = {
@@ -425,6 +473,38 @@ def load_excel_data(file_path, session_id):
     except Exception as e:
         return {"error": f"Error loading data: {str(e)}"}
 
+def extract_graduation_years(file_path):
+    """
+    Extracts graduation years from an Excel file. 
+    Looks for the "Year/Semester of Graduation" column to extract unique year values.
+    """
+    try:
+        # Read the Excel file
+        df = pd.read_excel(file_path, dtype=str)
+        df.columns = df.columns.str.strip()
+        
+        if "Year/Semester of Graduation" in df.columns:
+            # Extract unique values from the column
+            years = df["Year/Semester of Graduation"].dropna().str.strip().unique().tolist()
+            # Sort the years for better presentation
+            years.sort()
+            return years, []
+        else:
+            # Try to read from cell O1 (as mentioned in the task)
+            try:
+                wb = load_workbook(file_path, read_only=True)
+                sheet = wb.active
+                cell_value = sheet["O1"].value
+                if cell_value and "Year/Semester of Graduation" in str(cell_value):
+                    # Extract years from elsewhere in the Excel if possible
+                    # This might need more specific logic based on the exact Excel structure
+                    return default_graduation_years, ["Could not extract graduation years from O1, using defaults"]
+                return default_graduation_years, ["Cell O1 does not contain Year/Semester of Graduation"]
+            except Exception as e:
+                return default_graduation_years, [f"Error reading cell O1: {str(e)}"]
+    except Exception as e:
+        return default_graduation_years, [f"Error extracting graduation years: {str(e)}"]
+
 def process_qaa_report(session_id, colleges, years, degree_option, combine_all, combine_years, gender_option, nationality_option=None):
     """Generate QAA report based on given parameters"""
     try:
@@ -444,9 +524,11 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
         if gender_option.lower() != "all":
             filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
 
-        # Filter by nationality if Saudi is selected
+        # Filter by nationality if selected
         if nationality_option and nationality_option.lower() == "saudi":
             filtered_df = filtered_df[filtered_df["Nationality"].str.strip() == "Saudi Arabia"]
+        elif nationality_option and nationality_option.lower() == "non-saudi":
+            filtered_df = filtered_df[filtered_df["Nationality"].str.strip() != "Saudi Arabia"]
 
         # Apply degree filter
         if degree_option == "bachelor":
@@ -488,7 +570,8 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
                     grouped.get("Do not contact", 0) +
                     grouped.get("Others", 0) +
                     grouped.get("Left the country", 0) +
-                    grouped.get("Passed away", 0)
+                    grouped.get("Passed away", 0) +
+                    grouped.get("New graduate", 0)
                 )
                 employment_stats["Unemployed"] = grouped.get("Unemployed", 0)
                 employment_stats["Studying"] = grouped.get("Studying", 0)
@@ -543,7 +626,8 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
                         grouped.get("Do not contact", 0) +
                         grouped.get("Others", 0) +
                         grouped.get("Left the country", 0) +
-                        grouped.get("Passed away", 0)
+                        grouped.get("Passed away", 0) +
+                        grouped.get("New graduate", 0)
                     )
                     employment_stats["Unemployed"] = grouped.get("Unemployed", 0)
                     employment_stats["Studying"] = grouped.get("Studying", 0)
@@ -600,7 +684,8 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
                             grouped.get("Do not contact", 0) +
                             grouped.get("Others", 0) +
                             grouped.get("Left the country", 0) +
-                            grouped.get("Passed away", 0)
+                            grouped.get("Passed away", 0) +
+                            grouped.get("New graduate", 0)
                         )
                         employment_stats["Unemployed"] = grouped.get("Unemployed", 0)
                         employment_stats["Studying"] = grouped.get("Studying", 0)
@@ -1030,9 +1115,21 @@ def upload_file():
 
 @app.route('/get_constants')
 def get_constants():
+    session_id = request.args.get('session_id')
+    years = graduation_years
+    
+    # If we have a session ID and it has custom years, use those
+    if session_id and session_id in session_data:
+        if "graduation_years" in session_data[session_id]:
+            years = session_data[session_id]["graduation_years"]
+    
+    # If no years found (either globally or in session), use defaults
+    if not years:
+        years = default_graduation_years
+    
     return jsonify({
         "colleges": college_options,
-        "years": graduation_years
+        "years": years
     })
 
 @app.route('/qaa_preview', methods=['POST'])

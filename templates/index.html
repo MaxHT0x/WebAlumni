@@ -1096,6 +1096,10 @@
                                         <input type="radio" id="qaaNationalitySaudi" name="qaaNationality" value="saudi">
                                         <label for="qaaNationalitySaudi">Saudi</label>
                                     </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="qaaNationalityNonSaudi" name="qaaNationality" value="non-saudi">
+                                        <label for="qaaNationalityNonSaudi">Non-Saudi</label>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1668,16 +1672,25 @@
             });
             
             // Load constants (colleges and years) from the server
-            fetch('/get_constants')
-                .then(response => response.json())
-                .then(data => {
-                    colleges = data.colleges;
-                    years = data.years;
-                    populateSelectOptions();
-                })
-                .catch(error => {
-                    console.error('Error loading constants:', error);
-                });
+            fetchGraduationYears();
+            
+            function fetchGraduationYears(sessionId = null) {
+                let url = '/get_constants';
+                if (sessionId) {
+                    url += `?session_id=${sessionId}`;
+                }
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        colleges = data.colleges;
+                        years = data.years;
+                        populateSelectOptions();
+                    })
+                    .catch(error => {
+                        console.error('Error loading constants:', error);
+                    });
+            }
             
             // File selection via button
             selectFileBtn.addEventListener('click', function() {
@@ -1755,8 +1768,9 @@
                         // Show success message with stats
                         let message = `File uploaded successfully. ${data.record_count} records loaded.`;
                         
-                        if (data.warnings && data.warnings.length) {
-                            message += '<br><br><strong>Warnings:</strong><ul style="margin-left: 1rem;">';
+                        // Show warnings if any
+                        if (data.warnings && data.warnings.length > 0) {
+                            message += '<ul class="alert-list">';
                             data.warnings.forEach(warning => {
                                 message += `<li>${warning}</li>`;
                             });
@@ -1765,6 +1779,9 @@
                         } else {
                             showUploadAlert(message, 'alert-success');
                         }
+                        
+                        // Fetch updated graduation years using the session ID
+                        fetchGraduationYears(sessionId);
                         
                         // Update tab previews
                         updateQaaPreview();
@@ -2184,6 +2201,15 @@
             // Workplace tab
             const workplaceColleges = document.getElementById('workplaceColleges');
             const workplaceYears = document.getElementById('workplaceYears');
+            
+            // Clear existing options first
+            qaaColleges.innerHTML = '';
+            listColleges.innerHTML = '';
+            workplaceColleges.innerHTML = '';
+            
+            qaaYears.innerHTML = '';
+            listYears.innerHTML = '';
+            workplaceYears.innerHTML = '';
             
             // Populate college options
             colleges.forEach(college => {
