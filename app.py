@@ -505,6 +505,122 @@ def extract_graduation_years(file_path):
     except Exception as e:
         return default_graduation_years, [f"Error extracting graduation years: {str(e)}"]
 
+def create_gender_nationality_breakdown(filtered_df, writer, colleges):
+    """
+    Create a breakdown sheet showing employed vs unemployed stats by gender and nationality
+    This adds a new sheet to the existing Excel writer
+    """
+    # Create a deep copy to avoid modifying the original dataframe
+    breakdown_df = filtered_df.copy(deep=True)
+    
+    # Fix for missing columns if they don't exist
+    if "Gender" not in breakdown_df.columns:
+        print("Warning: Gender column not found in dataset")
+        return
+    if "Nationality" not in breakdown_df.columns:
+        print("Warning: Nationality column not found in dataset")
+        return
+    if "Current Status" not in breakdown_df.columns:
+        print("Warning: Current Status column not found in dataset")
+        return
+    
+    # Create a sheet for gender/nationality breakdown
+    sheet_name = "Gender_Nationality_Breakdown"
+    
+    # Initialize dataframes to store the results
+    college_results = []
+    
+    # Process each college
+    for college in colleges:
+        college_df = breakdown_df[breakdown_df["College"].str.strip() == college].copy()
+        if college_df.empty:
+            continue
+            
+        # Determine employment status
+        def get_employment_status(status):
+            employed_statuses = [
+                "Employed", "Employed - add to list", "Business owner", 
+                "Training", "Do not contact", "Others", 
+                "Left the country", "Passed away", "New graduate"
+            ]
+            if status in employed_statuses:
+                return "Employed"
+            elif status == "Unemployed":
+                return "Unemployed"
+            elif status == "Studying":
+                return "Studying"
+            else:
+                return "Other"
+        
+        # Properly modify dataframe using .loc to avoid SettingWithCopyWarning        
+        college_df.loc[:, "Employment Status"] = college_df["Current Status"].apply(get_employment_status)
+        
+        # Filter to just employed, unemployed, and studying and create a new dataframe
+        emp_df = college_df[college_df["Employment Status"].isin(["Employed", "Unemployed", "Studying"])].copy()
+        
+        if emp_df.empty:
+            continue
+            
+        # Create nationality category using .loc to avoid warning
+        emp_df.loc[:, "Nationality Category"] = emp_df["Nationality"].fillna("").apply(
+            lambda x: "Saudi" if x.strip() == "Saudi Arabia" else "Non-Saudi"
+        )
+        
+        # Group by Gender, Nationality Category and Employment Status
+        try:
+            grouped = emp_df.groupby(["Gender", "Nationality Category", "Employment Status"]).size().unstack(
+                fill_value=0
+            ).reset_index()
+            
+            # Ensure all status columns exist
+            if "Employed" not in grouped.columns:
+                grouped["Employed"] = 0
+            if "Unemployed" not in grouped.columns:
+                grouped["Unemployed"] = 0
+            if "Studying" not in grouped.columns:
+                grouped["Studying"] = 0
+                
+            # Calculate totals and percentages
+            grouped["Total"] = grouped["Employed"] + grouped["Unemployed"] + grouped["Studying"]
+            grouped["Employed %"] = (grouped["Employed"] / grouped["Total"] * 100).fillna(0).round(2)
+            grouped["Unemployed %"] = (grouped["Unemployed"] / grouped["Total"] * 100).fillna(0).round(2)
+            grouped["Studying %"] = (grouped["Studying"] / grouped["Total"] * 100).fillna(0).round(2)
+            
+            # Add college name for multi-college display
+            grouped["College"] = college
+            
+            college_results.append(grouped)
+        except Exception as e:
+            print(f"Error processing college {college}: {str(e)}")
+            continue
+    
+    # Combine all results
+    if college_results:
+        try:
+            all_results = pd.concat(college_results)
+            
+            # Reorganize for better readability
+            all_results = all_results[["College", "Gender", "Nationality Category", 
+                                    "Employed", "Unemployed", "Studying", "Total", 
+                                    "Employed %", "Unemployed %", "Studying %"]]
+            
+            # Write to Excel
+            all_results.to_excel(writer, sheet_name=sheet_name, index=False)
+            
+            # Format the sheet
+            worksheet = writer.sheets[sheet_name]
+            for idx, col in enumerate(all_results.columns):
+                # Auto-adjust column width
+                max_len = max(all_results[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.set_column(idx, idx, max_len)
+                
+            # Add a title
+            worksheet.write(all_results.shape[0] + 2, 0, "Gender and Nationality Employment Breakdown")
+            worksheet.write(all_results.shape[0] + 3, 0, "Note: This breakdown shows employed vs. unemployed alumni by gender and nationality.")
+            print("Successfully created gender/nationality breakdown sheet")
+        except Exception as e:
+            print(f"Error creating breakdown sheet: {str(e)}")
+
 def process_qaa_report(session_id, colleges, years, degree_option, combine_all, combine_years, gender_option, nationality_option=None):
     """Generate QAA report based on given parameters"""
     try:
@@ -516,9 +632,18 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
         # Add this line to normalize Current Status before grouping - THIS IS THE KEY FIX
         df["Current Status"] = df["Current Status"].apply(clean_status)
         
-        # Filter based on selections
-        filtered_df = df[df["_College"].isin(colleges)]
-        filtered_df = filtered_df[filtered_df["_Year"].isin(years)]
+        # Filter based on selections - make a copy for the gender/nationality breakdown that doesn't filter by gender/nationality
+        filtered_df_all = df[df["_College"].isin(colleges)]
+        filtered_df_all = filtered_df_all[filtered_df_all["_Year"].isin(years)]
+        
+        # Apply degree filter to the full dataset too
+        if degree_option == "bachelor":
+            filtered_df_all = filtered_df_all[~filtered_df_all["Student ID"].str.startswith("G", na=False)]
+        elif degree_option == "master":
+            filtered_df_all = filtered_df_all[filtered_df_all["Student ID"].str.startswith("G", na=False)]
+            
+        # Filter based on selections for the original report
+        filtered_df = filtered_df_all.copy()
         
         # Filter by gender if needed
         if gender_option.lower() != "all":
@@ -529,12 +654,6 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
             filtered_df = filtered_df[filtered_df["Nationality"].str.strip() == "Saudi Arabia"]
         elif nationality_option and nationality_option.lower() == "non-saudi":
             filtered_df = filtered_df[filtered_df["Nationality"].str.strip() != "Saudi Arabia"]
-
-        # Apply degree filter
-        if degree_option == "bachelor":
-            filtered_df = filtered_df[~filtered_df["Student ID"].str.startswith("G", na=False)]
-        elif degree_option == "master":
-            filtered_df = filtered_df[filtered_df["Student ID"].str.startswith("G", na=False)]
 
         if filtered_df.empty:
             return {"error": "No matching data found for the given filters."}
@@ -550,6 +669,12 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
                 lambda sid: "Masters" if (isinstance(sid, str) and sid.strip().startswith("G")) else "Bachelors"
             )
             filtered_df["MajorFormatted"] = filtered_df["Major"].str.strip() + " - " + filtered_df["Degree Type"] + " - " + filtered_df["College"].str.strip()
+            
+            # Also add to the full dataset for the breakdown
+            filtered_df_all["Degree Type"] = filtered_df_all["Student ID"].apply(
+                lambda sid: "Masters" if (isinstance(sid, str) and sid.strip().startswith("G")) else "Bachelors"
+            )
+            filtered_df_all["MajorFormatted"] = filtered_df_all["Major"].str.strip() + " - " + filtered_df_all["Degree Type"] + " - " + filtered_df_all["College"].str.strip()
 
         with pd.ExcelWriter(file_path, engine="xlsxwriter") as writer:
             if combine_all:
@@ -712,6 +837,22 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
                         worksheet.write(num_rows + 5, 0, "Academic Year:")
                         worksheet.write(num_rows + 5, 1, year)
 
+        # Add a separate with block to ensure the workbook is properly saved with our gender/nationality breakdown
+        # Must save the workbook above first to avoid sharing violations
+
+        # Now create a new excel writer to add our breakdown sheet
+        breakdown_file = file_path
+        try:
+            # Use a new writer to add the gender/nationality breakdown sheet
+            with pd.ExcelWriter(breakdown_file, engine="openpyxl", mode="a") as breakdown_writer:
+                if not filtered_df_all.empty:
+                    # Create the gender/nationality breakdown sheet after the regular reports are done
+                    print("Adding gender/nationality breakdown sheet...")
+                    create_gender_nationality_breakdown(filtered_df_all, breakdown_writer, colleges)
+                    print("Breakdown sheet added successfully")
+        except Exception as e:
+            print(f"Failed to create gender/nationality breakdown: {str(e)}")
+            
         return {
             "status": "success",
             "file": output_file
@@ -719,6 +860,7 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
             
     except Exception as e:
         return {"error": f"Error generating QAA report: {str(e)}"}
+
 
 def process_alumni_list(session_id, colleges, years, allowed_statuses, gender_option, nationality_option=None, degree_option="all"):
     """Generate alumni list based on given parameters"""
