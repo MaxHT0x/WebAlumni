@@ -1088,6 +1088,9 @@ def process_simple_mode_report(filtered_df, colleges, years, file_path, output_f
                     worksheet.write(total_row, 1, summary_df["Total Graduates"].sum(), number_format)
                     worksheet.write(total_row, 2, summary_df["Gentlemen"].sum(), number_format)
                     worksheet.write(total_row, 3, summary_df["Ladies"].sum(), number_format)
+            
+            # Create "All years summary" tab
+            create_all_years_summary_tab(filtered_df, writer, workbook, header_format, number_format)
         
         return {
             "status": "success",
@@ -1096,6 +1099,103 @@ def process_simple_mode_report(filtered_df, colleges, years, file_path, output_f
         
     except Exception as e:
         return {"error": f"Error generating Simple mode report: {str(e)}"}
+
+
+def create_all_years_summary_tab(filtered_df, writer, workbook, header_format, number_format):
+    """Create the 'All years summary' tab with college/gender and nationality breakdowns"""
+    try:
+        # Group data by college for overall summary
+        summary_data = []
+        
+        # Get all colleges that have data across all years
+        colleges_with_data = filtered_df["College_Normalized"].unique()
+        
+        for college in colleges_with_data:
+            college_df = filtered_df[filtered_df["College_Normalized"] == college]
+            
+            # Total graduates for this college
+            total_graduates = len(college_df)
+            
+            # Gender breakdown (case-insensitive)
+            gender_counts = college_df["Gender_Normalized"].value_counts()
+            gentlemen = gender_counts.get("MALE", 0)
+            ladies = gender_counts.get("FEMALE", 0)
+            
+            # Nationality breakdown (case-insensitive)
+            # Normalize nationality data
+            nationality_normalized = college_df["Nationality"].fillna("").str.strip()
+            saudi_count = len(nationality_normalized[nationality_normalized == "Saudi Arabia"])
+            non_saudi_count = total_graduates - saudi_count
+            
+            summary_data.append({
+                "College": college,
+                "Total Graduates": total_graduates,
+                "Ladies": ladies,
+                "Gentlemen": gentlemen,
+                "Saudi": saudi_count,
+                "Non-Saudi": non_saudi_count
+            })
+        
+        if not summary_data:
+            return
+            
+        # Create DataFrame
+        summary_df = pd.DataFrame(summary_data)
+        
+        # Write to "All years summary" sheet
+        sheet_name = "All years summary"
+        
+        # Create worksheet manually for custom formatting
+        worksheet = workbook.add_worksheet(sheet_name)
+        
+        # Define column positions based on the image layout
+        # F-G: College info, H-I: Gender, J-L: Nationality
+        col_college = 5  # Column F (0-indexed, so F=5)
+        col_total = 6    # Column G
+        col_ladies = 7   # Column H  
+        col_gentlemen = 8 # Column I
+        col_saudi = 9    # Column J
+        col_non_saudi = 10 # Column K
+        
+        # Write headers
+        worksheet.write(0, col_college, "Total of Graduates by Colleges", header_format)
+        worksheet.write(0, col_ladies, "Total Graduates by Gender", header_format)
+        worksheet.write(0, col_saudi, "Total Graduates by Nationalities", header_format)
+        
+        # Write sub-headers
+        worksheet.write(1, col_ladies, "Ladies", header_format)
+        worksheet.write(1, col_gentlemen, "Gentlemen", header_format)
+        worksheet.write(1, col_saudi, "Saudi", header_format)
+        worksheet.write(1, col_non_saudi, "Non-Saudi", header_format)
+        
+        # Write data rows
+        for idx, row in summary_df.iterrows():
+            row_num = idx + 2  # Start from row 2 (0-indexed)
+            
+            worksheet.write(row_num, col_college, row["College"], number_format)
+            worksheet.write(row_num, col_total, row["Total Graduates"], number_format)
+            worksheet.write(row_num, col_ladies, row["Ladies"], number_format)
+            worksheet.write(row_num, col_gentlemen, row["Gentlemen"], number_format)
+            worksheet.write(row_num, col_saudi, row["Saudi"], number_format)
+            worksheet.write(row_num, col_non_saudi, row["Non-Saudi"], number_format)
+        
+        # Write totals row
+        total_row = len(summary_df) + 2
+        worksheet.write(total_row, col_college, "Total of Graduates", header_format)
+        worksheet.write(total_row, col_total, summary_df["Total Graduates"].sum(), number_format)
+        worksheet.write(total_row, col_ladies, summary_df["Ladies"].sum(), number_format)
+        worksheet.write(total_row, col_gentlemen, summary_df["Gentlemen"].sum(), number_format)
+        worksheet.write(total_row, col_saudi, summary_df["Saudi"].sum(), number_format)
+        worksheet.write(total_row, col_non_saudi, summary_df["Non-Saudi"].sum(), number_format)
+        
+        # Set column widths
+        worksheet.set_column(col_college, col_college, 35)  # College names
+        worksheet.set_column(col_total, col_non_saudi, 15)  # All numeric columns
+        
+        print("Successfully created All years summary tab")
+        
+    except Exception as e:
+        print(f"Error creating All years summary tab: {str(e)}")
 
 
 def process_alumni_list(session_id, colleges, years, allowed_statuses, gender_option, nationality_option=None, degree_option="all"):
