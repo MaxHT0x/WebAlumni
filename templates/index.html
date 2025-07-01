@@ -1103,6 +1103,20 @@
                                 </div>
                             </div>
                             
+                            <div class="card-option">
+                                <label class="option-label">Mode:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option active">
+                                        <input type="radio" id="qaaModeDetailed" name="qaaMode" value="detailed" checked>
+                                        <label for="qaaModeDetailed">Detailed</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="qaaModeSimple" name="qaaMode" value="simple">
+                                        <label for="qaaModeSimple">Simple</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="divider"></div>
                             
                             <div class="card-option">
@@ -1836,6 +1850,9 @@
             document.querySelectorAll('input[name="qaaNationality"]').forEach(radio => {
                 radio.addEventListener('change', updateQaaPreview);
             });
+            document.querySelectorAll('input[name="qaaMode"]').forEach(radio => {
+                radio.addEventListener('change', updateQaaPreview);
+            });
             
             // Handle combine options
             qaaCombineAll.addEventListener('change', function() {
@@ -2312,6 +2329,7 @@
             const degreeOption = getSelectedRadioValue('qaaDegree');
             const genderOption = getSelectedRadioValue('qaaGender');
             const nationalityOption = getSelectedRadioValue('qaaNationality');
+            const modeOption = getSelectedRadioValue('qaaMode');
             
             fetch('/qaa_preview', {
                 method: 'POST',
@@ -2324,7 +2342,8 @@
                     years: selectedYears,
                     degree_option: degreeOption,
                     gender_option: genderOption,
-                    nationality_option: nationalityOption
+                    nationality_option: nationalityOption,
+                    mode_option: modeOption
                 })
             })
             .then(response => response.json())
@@ -2340,10 +2359,17 @@
                         previewText += `- ${college}: ${count}\n`;
                     });
                     
-                    previewText += '\nStatus Breakdown:\n';
-                    Object.entries(data.status_counts).forEach(([status, count]) => {
-                        previewText += `- ${status}: ${count}\n`;
-                    });
+                    if (data.mode === 'simple') {
+                        previewText += '\nGender Breakdown:\n';
+                        Object.entries(data.gender_counts || {}).forEach(([gender, count]) => {
+                            previewText += `- ${gender}: ${count}\n`;
+                        });
+                    } else {
+                        previewText += '\nStatus Breakdown:\n';
+                        Object.entries(data.status_counts || {}).forEach(([status, count]) => {
+                            previewText += `- ${status}: ${count}\n`;
+                        });
+                    }
                     
                     qaaPreview.textContent = previewText;
                 }
@@ -2531,6 +2557,7 @@
             const combineYears = document.getElementById('qaaCombineYears').checked;
             const genderOption = getSelectedRadioValue('qaaGender');
             const nationalityOption = getSelectedRadioValue('qaaNationality');
+            const modeOption = getSelectedRadioValue('qaaMode');
             
             fetch('/generate_qaa_report', {
                 method: 'POST',
@@ -2545,7 +2572,8 @@
                     combine_all: combineAll,
                     combine_years: combineYears,
                     gender_option: genderOption,
-                    nationality_option: nationalityOption
+                    nationality_option: nationalityOption,
+                    mode_option: modeOption
                 })
             })
             .then(response => response.json())

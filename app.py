@@ -718,7 +718,7 @@ def create_gender_nationality_breakdown(filtered_df, writer, colleges):
         except Exception as e:
             print(f"Error creating breakdown sheet: {str(e)}")
 
-def process_qaa_report(session_id, colleges, years, degree_option, combine_all, combine_years, gender_option, nationality_option=None):
+def process_qaa_report(session_id, colleges, years, degree_option, combine_all, combine_years, gender_option, nationality_option=None, mode_option="detailed"):
     """Generate QAA report based on given parameters"""
     try:
         if session_id not in session_data:
@@ -733,24 +733,28 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
         filtered_df_all = df[df["_College"].isin(colleges)]
         filtered_df_all = filtered_df_all[filtered_df_all["_Year"].isin(years)]
         
-        # Apply degree filter to the full dataset too
-        if degree_option == "bachelor":
-            filtered_df_all = filtered_df_all[~filtered_df_all["Student ID"].str.startswith("G", na=False)]
-        elif degree_option == "master":
-            filtered_df_all = filtered_df_all[filtered_df_all["Student ID"].str.startswith("G", na=False)]
+        # For Simple mode, ignore all filters except colleges and years
+        if mode_option == "simple":
+            filtered_df = filtered_df_all.copy()
+        else:
+            # Apply degree filter to the full dataset too
+            if degree_option == "bachelor":
+                filtered_df_all = filtered_df_all[~filtered_df_all["Student ID"].str.startswith("G", na=False)]
+            elif degree_option == "master":
+                filtered_df_all = filtered_df_all[filtered_df_all["Student ID"].str.startswith("G", na=False)]
+                
+            # Filter based on selections for the original report
+            filtered_df = filtered_df_all.copy()
             
-        # Filter based on selections for the original report
-        filtered_df = filtered_df_all.copy()
-        
-        # Filter by gender if needed
-        if gender_option.lower() != "all":
-            filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
+            # Filter by gender if needed
+            if gender_option.lower() != "all":
+                filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
 
-        # Filter by nationality if selected
-        if nationality_option and nationality_option.lower() == "saudi":
-            filtered_df = filtered_df[filtered_df["Nationality"].str.strip() == "Saudi Arabia"]
-        elif nationality_option and nationality_option.lower() == "non-saudi":
-            filtered_df = filtered_df[filtered_df["Nationality"].str.strip() != "Saudi Arabia"]
+            # Filter by nationality if selected
+            if nationality_option and nationality_option.lower() == "saudi":
+                filtered_df = filtered_df[filtered_df["Nationality"].str.strip() == "Saudi Arabia"]
+            elif nationality_option and nationality_option.lower() == "non-saudi":
+                filtered_df = filtered_df[filtered_df["Nationality"].str.strip() != "Saudi Arabia"]
 
         if filtered_df.empty:
             return {"error": "No matching data found for the given filters."}
@@ -758,6 +762,10 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
         # Generate a unique filename
         output_file = f"QAA_Report_{uuid.uuid4().hex[:8]}.xlsx"
         file_path = os.path.join(app.config['GENERATED_FILES'], output_file)
+        
+        # Handle Simple mode - completely different logic
+        if mode_option == "simple":
+            return process_simple_mode_report(filtered_df_all, colleges, years, file_path, output_file)
         
         # Use formatted majors if needed
         use_formatted_majors = combine_all or (degree_option == "all")
@@ -957,6 +965,137 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
             
     except Exception as e:
         return {"error": f"Error generating QAA report: {str(e)}"}
+
+
+def process_simple_mode_report(filtered_df, colleges, years, file_path, output_file):
+    """Generate Simple mode QAA report - just totals by college/year with gender breakdown"""
+    try:
+        # Helper function to extract academic year from graduation term
+        def extract_academic_year(graduation_term):
+            """Extract academic year (e.g., '2013-2014') from graduation term"""
+            if pd.isna(graduation_term) or not isinstance(graduation_term, str):
+                return "Unknown"
+            
+            # Look for patterns like "2013-2014", "2013-14", or just "2013"
+            import re
+            
+            # Pattern for full academic year like "2013-2014"
+            match = re.search(r'(\d{4})-(\d{4})', graduation_term)
+            if match:
+                return f"{match.group(1)}-{match.group(2)}"
+            
+            # Pattern for short academic year like "2013-14"
+            match = re.search(r'(\d{4})-(\d{2})', graduation_term)
+            if match:
+                return f"{match.group(1)}-20{match.group(2)}"
+            
+            # Pattern for single year - assume it's the ending year
+            match = re.search(r'(\d{4})', graduation_term)
+            if match:
+                year = int(match.group(1))
+                prev_year = year - 1
+                return f"{prev_year}-{year}"
+            
+            return "Unknown"
+        
+        # Normalize text data for case-insensitive comparisons
+        filtered_df = filtered_df.copy()  # Make sure we're working with a copy
+        filtered_df["Gender_Normalized"] = filtered_df["Gender"].str.strip().str.upper()
+        filtered_df["College_Normalized"] = filtered_df["_College"].str.strip()
+        
+        # Add academic year column
+        filtered_df["Academic_Year"] = filtered_df["_Year"].apply(extract_academic_year)
+        
+        # Get unique academic years, sorted
+        academic_years = sorted(filtered_df["Academic_Year"].unique())
+        
+        with pd.ExcelWriter(file_path, engine="xlsxwriter") as writer:
+            workbook = writer.book
+            
+            # Create formats
+            header_format = workbook.add_format({
+                'bold': True,
+                'bg_color': '#4472C4',
+                'font_color': 'white',
+                'border': 1,
+                'align': 'center'
+            })
+            cell_format = workbook.add_format({
+                'border': 1,
+                'align': 'left'
+            })
+            number_format = workbook.add_format({
+                'border': 1,
+                'align': 'center'
+            })
+            
+            # Create one sheet per academic year
+            for academic_year in academic_years:
+                if academic_year == "Unknown":
+                    continue  # Skip unknown years
+                    
+                # Filter data for this academic year
+                year_df = filtered_df[filtered_df["Academic_Year"] == academic_year]
+                
+                if year_df.empty:
+                    continue
+                
+                # Create summary by college and gender
+                summary_data = []
+                
+                # Get all colleges that have data for this year
+                colleges_with_data = year_df["College_Normalized"].unique()
+                
+                for college in colleges_with_data:
+                    college_df = year_df[year_df["College_Normalized"] == college]
+                    
+                    # Total graduates for this college
+                    total_graduates = len(college_df)
+                    
+                    # Gender breakdown (case-insensitive)
+                    gender_counts = college_df["Gender_Normalized"].value_counts()
+                    gentlemen = gender_counts.get("MALE", 0)
+                    ladies = gender_counts.get("FEMALE", 0)
+                    
+                    summary_data.append({
+                        "College": college,
+                        "Total Graduates": total_graduates,
+                        "Gentlemen": gentlemen,
+                        "Ladies": ladies
+                    })
+                
+                # Create DataFrame and write to Excel
+                if summary_data:
+                    summary_df = pd.DataFrame(summary_data)
+                    
+                    # Clean sheet name (Excel has 31 character limit)
+                    sheet_name = academic_year.replace("-", "_")[:31]
+                    
+                    summary_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                    
+                    # Format the sheet
+                    worksheet = writer.sheets[sheet_name]
+                    
+                    # Set column widths
+                    worksheet.set_column('A:A', 35)  # College
+                    worksheet.set_column('B:B', 15)  # Total Graduates
+                    worksheet.set_column('C:C', 15)  # Gentlemen
+                    worksheet.set_column('D:D', 15)  # Ladies
+                    
+                    # Add totals row
+                    total_row = len(summary_df) + 2
+                    worksheet.write(total_row, 0, "TOTAL", header_format)
+                    worksheet.write(total_row, 1, summary_df["Total Graduates"].sum(), number_format)
+                    worksheet.write(total_row, 2, summary_df["Gentlemen"].sum(), number_format)
+                    worksheet.write(total_row, 3, summary_df["Ladies"].sum(), number_format)
+        
+        return {
+            "status": "success",
+            "file": output_file
+        }
+        
+    except Exception as e:
+        return {"error": f"Error generating Simple mode report: {str(e)}"}
 
 
 def process_alumni_list(session_id, colleges, years, allowed_statuses, gender_option, nationality_option=None, degree_option="all"):
@@ -1393,6 +1532,7 @@ def qaa_preview():
     degree_option = data.get('degree_option', 'all')
     gender_option = data.get('gender_option', 'all')
     nationality_option = data.get('nationality_option', 'all')
+    mode_option = data.get('mode_option', 'detailed')
     
     # Filter data
     filtered_df = df[df["_College"].isin(colleges) & df["_Year"].isin(years)]
@@ -1416,13 +1556,25 @@ def qaa_preview():
     
     # Preview summary
     college_counts = filtered_df["_College"].value_counts().to_dict()
-    status_counts = filtered_df["_CurrentStatus"].value_counts().head(10).to_dict()
     
-    return jsonify({
-        "total_records": len(filtered_df),
-        "college_counts": college_counts,
-        "status_counts": status_counts
-    })
+    if mode_option == "simple":
+        # For Simple mode, show gender breakdown instead of status
+        gender_counts = filtered_df["Gender"].value_counts().to_dict()
+        return jsonify({
+            "total_records": len(filtered_df),
+            "college_counts": college_counts,
+            "gender_counts": gender_counts,
+            "mode": "simple"
+        })
+    else:
+        # For Detailed mode, show status breakdown
+        status_counts = filtered_df["_CurrentStatus"].value_counts().head(10).to_dict()
+        return jsonify({
+            "total_records": len(filtered_df),
+            "college_counts": college_counts,
+            "status_counts": status_counts,
+            "mode": "detailed"
+        })
 
 @app.route('/alumni_list_preview', methods=['POST'])
 def alumni_list_preview():
@@ -1517,10 +1669,11 @@ def generate_qaa_report():
     combine_years = data.get('combine_years', True)
     gender_option = data.get('gender_option', 'all')
     nationality_option = data.get('nationality_option', 'all')
+    mode_option = data.get('mode_option', 'detailed')
     
     result = process_qaa_report(
         session_id, colleges, years, degree_option, 
-        combine_all, combine_years, gender_option, nationality_option
+        combine_all, combine_years, gender_option, nationality_option, mode_option
     )
     
     return jsonify(result)
