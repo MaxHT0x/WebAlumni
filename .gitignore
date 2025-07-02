@@ -1,7 +1,9 @@
 uploads/
 generated_files/
-.venv/
+venv/
 __pycache__/
 *.pyc
 .vscode/
 .windsurf/
+.claude/
+
