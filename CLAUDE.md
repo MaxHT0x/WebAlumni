@@ -90,6 +90,8 @@ pip install -r requirements.txt
 - Groups data by academic year (e.g., "2013-2014") regardless of graduation terms
 - Creates one Excel tab per academic year
 - Shows total graduates per college with "Gentlemen" and "Ladies" counts
+- Includes "All years summary" tab with comprehensive overview across all years
+- Nationality breakdown with Saudi/Non-Saudi categorization in summary tab
 - Excludes majors, employment status, and all status information
 - Case-insensitive data processing for robust gender detection
 - Only includes colleges that have graduates for each year
@@ -100,6 +102,7 @@ pip install -r requirements.txt
 - Normalizes text data (Gender_Normalized, College_Normalized) for case-insensitive processing
 - Creates clean Excel reports with proper formatting and totals
 - Filters out years with no data automatically
+- Generates summary tab (`create_all_years_summary_tab()`) with three-section layout: colleges, gender, and nationality
 
 ### Frontend Architecture
 
