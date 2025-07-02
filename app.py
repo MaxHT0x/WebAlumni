@@ -54,6 +54,12 @@ expected_current_status = [
     "New graduate"  # Added for banner integration
 ]
 
+# Expected Gender values
+expected_gender_values = [
+    "Male",
+    "Female"
+]
+
 # Default fallback graduation years in case dynamic extraction fails
 default_graduation_years = [
     "2010-2011 Spring", "2010-2011 Summer",
@@ -82,6 +88,20 @@ graduation_years = []
 def clean_status(status):
     if isinstance(status, str):
         return status.strip().lower().capitalize()
+    return "Unknown"
+
+def clean_gender(gender):
+    """
+    Normalize gender values for consistent processing
+    """
+    if isinstance(gender, str):
+        cleaned = gender.strip().lower().capitalize()
+        # Handle common variations
+        if cleaned in ["M", "Man", "Men", "Gentleman"]:
+            return "Male"
+        elif cleaned in ["F", "Woman", "Women", "Lady", "Ladies"]:
+            return "Female"
+        return cleaned
     return "Unknown"
 
 def safe_get_column(df, column_name, default_value=""):
@@ -337,7 +357,11 @@ def get_workplace_statistics(df, colleges, years, degree_option, gender_option, 
 
     # Filter by gender if needed
     if gender_option.lower() != "all":
-        mask &= (df["Gender"].str.strip().str.lower() == gender_option.lower())
+        # Use normalized gender for filtering
+        if "_Gender" in df.columns:
+            mask &= (df["_Gender"] == clean_gender(gender_option))
+        else:
+            mask &= (df["Gender"].str.strip().str.lower() == gender_option.lower())
 
     # Filter by nationality if Saudi is selected, only if the Nationality column exists
     if nationality_option and nationality_option.lower() == "saudi":
@@ -535,7 +559,8 @@ def load_excel_data(file_path, session_id):
         # Validate colleges
         invalid_colleges = df[~df["_College"].isin(college_options)]
         if not invalid_colleges.empty:
-            warnings.append(f"Found {len(invalid_colleges)} records with invalid colleges")
+            unexpected_college_values = invalid_colleges["_College"].unique().tolist()
+            warnings.append(f"⚠️ ALERT: Found unexpected 'College' values: {unexpected_college_values}")
             
         # Validate Current Status values if not a Banner file
         if not is_banner_file and "Current Status" in df.columns:
@@ -550,6 +575,39 @@ def load_excel_data(file_path, session_id):
                 unexpected_values = unexpected_statuses["_CurrentStatus"].unique().tolist()
                 warnings.append(f"⚠️ ALERT: Found unexpected 'Current Status' values: {unexpected_values}")
 
+        # Validate Gender values
+        if "Gender" in df.columns:
+            # Normalize the Gender values for comparison
+            df["_Gender"] = df["Gender"].apply(clean_gender)
+            
+            # Check for unexpected Gender values
+            normalized_expected_genders = [clean_gender(gender) for gender in expected_gender_values]
+            unexpected_genders = df[~df["_Gender"].isin(normalized_expected_genders)]
+            
+            if not unexpected_genders.empty:
+                unexpected_gender_values = unexpected_genders["_Gender"].unique().tolist()
+                warnings.append(f"⚠️ ALERT: Found unexpected 'Gender' values: {unexpected_gender_values}")
+
+        # Enhanced empty/null detection for critical fields
+        critical_fields = ["Gender", "College"]
+        if not is_banner_file:
+            critical_fields.append("Current Status")
+        
+        for field in critical_fields:
+            if field in df.columns:
+                # Check for empty, null, or whitespace-only values
+                empty_mask = (df[field].isna()) | (df[field] == "") | (df[field].str.strip() == "")
+                empty_count = empty_mask.sum()
+                
+                if empty_count > 0:
+                    # Get row numbers for debugging (add 2 to account for header and 0-indexing)
+                    empty_rows = df[empty_mask].index.tolist()
+                    empty_rows_display = [row + 2 for row in empty_rows[:10]]  # Show first 10 rows
+                    
+                    warning_msg = f"⚠️ ALERT: Found {empty_count} records with empty '{field}' values"
+                    warning_msg += f" (at rows: {empty_rows_display}{'...' if len(empty_rows) > 10 else ''})"
+                    warnings.append(warning_msg)
+
         # Return some statistics about the loaded data
         stats = {
             "status": "success",
@@ -561,7 +619,7 @@ def load_excel_data(file_path, session_id):
                 "min": df["_Year"].min(),
                 "max": df["_Year"].max()
             },
-            "gender_distribution": df["Gender"].value_counts().to_dict(),
+            "gender_distribution": df["_Gender"].value_counts().to_dict() if "_Gender" in df.columns else df["Gender"].value_counts().to_dict(),
             "is_banner": is_banner_file
         }
 
@@ -748,7 +806,11 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
             
             # Filter by gender if needed
             if gender_option.lower() != "all":
-                filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
+                # Use normalized gender for filtering
+                if "_Gender" in filtered_df.columns:
+                    filtered_df = filtered_df[filtered_df["_Gender"] == clean_gender(gender_option)]
+                else:
+                    filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
 
             # Filter by nationality if selected
             if nationality_option and nationality_option.lower() == "saudi":
@@ -1000,7 +1062,11 @@ def process_simple_mode_report(filtered_df, colleges, years, file_path, output_f
         
         # Normalize text data for case-insensitive comparisons
         filtered_df = filtered_df.copy()  # Make sure we're working with a copy
-        filtered_df["Gender_Normalized"] = filtered_df["Gender"].str.strip().str.upper()
+        # Use the already normalized gender column if available, otherwise create it
+        if "_Gender" in filtered_df.columns:
+            filtered_df["Gender_Normalized"] = filtered_df["_Gender"].str.upper()
+        else:
+            filtered_df["Gender_Normalized"] = filtered_df["Gender"].str.strip().str.upper()
         filtered_df["College_Normalized"] = filtered_df["_College"].str.strip()
         
         # Add academic year column
@@ -1222,7 +1288,11 @@ def process_alumni_list(session_id, colleges, years, allowed_statuses, gender_op
 
         # Filter by gender if needed
         if gender_option.lower() != "all":
-            filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
+            # Use normalized gender for filtering
+            if "_Gender" in filtered_df.columns:
+                filtered_df = filtered_df[filtered_df["_Gender"] == clean_gender(gender_option)]
+            else:
+                filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
 
         # Filter by nationality
         if nationality_option and nationality_option.lower() != "all":
@@ -1639,7 +1709,11 @@ def qaa_preview():
     
     # Apply gender filter
     if gender_option.lower() != "all":
-        filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
+        # Use normalized gender for filtering
+        if "_Gender" in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df["_Gender"] == clean_gender(gender_option)]
+        else:
+            filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
     
     # Apply nationality filter
     if nationality_option and nationality_option.lower() != "all":
@@ -1659,7 +1733,10 @@ def qaa_preview():
     
     if mode_option == "simple":
         # For Simple mode, show gender breakdown instead of status
-        gender_counts = filtered_df["Gender"].value_counts().to_dict()
+        if "_Gender" in filtered_df.columns:
+            gender_counts = filtered_df["_Gender"].value_counts().to_dict()
+        else:
+            gender_counts = filtered_df["Gender"].value_counts().to_dict()
         return jsonify({
             "total_records": len(filtered_df),
             "college_counts": college_counts,
@@ -1704,7 +1781,11 @@ def alumni_list_preview():
 
     # Filter by gender if needed
     if gender_option.lower() != "all":
-        filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
+        # Use normalized gender for filtering
+        if "_Gender" in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df["_Gender"] == clean_gender(gender_option)]
+        else:
+            filtered_df = filtered_df[filtered_df["Gender"].str.strip().str.lower() == gender_option.lower()]
 
     # Filter by nationality
     if nationality_option and nationality_option.lower() != "all":
@@ -1718,7 +1799,10 @@ def alumni_list_preview():
     
     # Preview summary
     college_counts = filtered_df["_College"].value_counts().to_dict()
-    gender_counts = filtered_df["Gender"].value_counts().to_dict()
+    if "_Gender" in filtered_df.columns:
+        gender_counts = filtered_df["_Gender"].value_counts().to_dict()
+    else:
+        gender_counts = filtered_df["Gender"].value_counts().to_dict()
     
     return jsonify({
         "total_alumni": len(filtered_df),

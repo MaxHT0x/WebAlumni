@@ -10,13 +10,13 @@ WebAlumni is a Flask-based web application for processing and analyzing alumni d
 
 ### Running the Application
 ```bash
-python app.py
+python3 app.py
 ```
 The application runs on `http://127.0.0.1:5000/` by default.
 
 ### Python Environment Setup
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 # Windows
 .venv\Scripts\activate
 # macOS/Linux  
@@ -43,8 +43,8 @@ pip install -r requirements.txt
 
 **Data Processing Pipeline**
 1. **File Upload**: Excel files uploaded to `uploads/` directory
-2. **Data Loading**: `load_excel_data()` validates and processes Excel files
-3. **Data Normalization**: Company names, employment status, and position titles are normalized
+2. **Data Loading**: `load_excel_data()` validates and processes Excel files with comprehensive validation
+3. **Data Normalization**: Company names, employment status, gender values, and position titles are normalized
 4. **Report Generation**: Multiple report types generated as Excel files in `generated_files/`
 
 **Supported File Types**
@@ -67,6 +67,28 @@ pip install -r requirements.txt
 **Status Cleaning (`clean_status()`)**
 - Normalizes employment status values
 - Handles case sensitivity and whitespace
+
+**Gender Cleaning (`clean_gender()`)**
+- Normalizes gender values with common variation handling
+- Maps variations (M/Man/Gentleman → Male, F/Woman/Lady → Female)
+- Returns standardized gender values for consistent processing
+
+### Data Validation System
+
+**Excel File Validation (`load_excel_data()`)**
+- **Required Column Validation**: Checks for missing required columns based on file type
+- **Student ID Format**: Validates IDs match pattern `^[0-9G]\d*$`
+- **College Validation**: Validates against predefined college list with ⚠️ ALERT for invalid entries
+- **Graduation Year Validation**: Validates against extracted or default year ranges
+- **Current Status Validation**: Checks against 11 expected status values with ⚠️ ALERT for invalid entries
+- **Gender Validation**: Validates against expected gender values ["Male", "Female"] with ⚠️ ALERT for invalid entries
+- **Empty Field Detection**: Identifies empty/null values in critical fields (Gender, Status, College) with row numbers
+- **Comprehensive Warnings**: Returns detailed validation messages with row references for debugging
+
+**Expected Values**
+- **Current Status**: 11 standard values including "Employed", "Unemployed", "Business owner", "New graduate", and a few others. 
+- **Gender**: "Male", "Female" with normalization for common variations
+- **Colleges**: 5 predefined college options
 
 ### Report Types
 
