@@ -1175,6 +1175,10 @@
                                         <span class="btn-icon">📊</span>
                                         Generate QAA Report
                                     </button>
+                                    <button class="btn btn-primary" id="runTestsBtn">
+                                        <span class="btn-icon">🧪</span>
+                                        Run Tests
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1833,6 +1837,7 @@
             const qaaCombineAll = document.getElementById('qaaCombineAll');
             const qaaCombineYears = document.getElementById('qaaCombineYears');
             const generateQaaBtn = document.getElementById('generateQaaBtn');
+            const runTestsBtn = document.getElementById('runTestsBtn');
             const qaaLoader = document.getElementById('qaaLoader');
             const qaaAlert = document.getElementById('qaaAlert');
             const qaaDownload = document.getElementById('qaaDownload');
@@ -1880,6 +1885,7 @@
             });
             
             generateQaaBtn.addEventListener('click', generateQaaReport);
+            runTestsBtn.addEventListener('click', runQaaTests);
             
             qaaDownloadBtn.addEventListener('click', function() {
                 if (qaaFilename) {
@@ -2592,6 +2598,70 @@
                 qaaLoader.style.display = 'none';
                 generateQaaBtn.disabled = false;
                 showAlert(qaaAlert, 'Error generating report: ' + error.message, 'alert-danger');
+            });
+        }
+        
+        function runQaaTests() {
+            if (!sessionId) {
+                showAlert(document.getElementById('qaaAlert'), 'No session available. Please upload the test file first.', 'alert-danger');
+                return;
+            }
+            
+            // Show loader and hide alerts/download
+            const qaaLoader = document.getElementById('qaaLoader');
+            const qaaAlert = document.getElementById('qaaAlert');
+            const qaaDownload = document.getElementById('qaaDownload');
+            const runTestsBtn = document.getElementById('runTestsBtn');
+            const generateQaaBtn = document.getElementById('generateQaaBtn');
+            
+            qaaLoader.style.display = 'flex';
+            qaaAlert.style.display = 'none';
+            qaaDownload.style.display = 'none';
+            runTestsBtn.disabled = true;
+            generateQaaBtn.disabled = true;
+            
+            // Update loader text for testing
+            const loaderText = qaaLoader.querySelector('span');
+            const originalText = loaderText ? loaderText.textContent : '';
+            if (loaderText) {
+                loaderText.textContent = 'Running QAA Report Tests...';
+            }
+            
+            fetch('/run_tests', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    test_year: '2014-2015'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                qaaLoader.style.display = 'none';
+                if (loaderText) {
+                    loaderText.textContent = originalText;
+                }
+                runTestsBtn.disabled = false;
+                generateQaaBtn.disabled = false;
+                
+                if (data.error) {
+                    showAlert(qaaAlert, data.error, 'alert-danger');
+                } else {
+                    // Show test results
+                    const alertClass = data.overall_passed ? 'alert-success' : 'alert-warning';
+                    showAlert(qaaAlert, `<pre>${data.formatted_results}</pre>`, alertClass);
+                }
+            })
+            .catch(error => {
+                qaaLoader.style.display = 'none';
+                if (loaderText) {
+                    loaderText.textContent = originalText;
+                }
+                runTestsBtn.disabled = false;
+                generateQaaBtn.disabled = false;
+                showAlert(qaaAlert, 'Error running tests: ' + error.message, 'alert-danger');
             });
         }
         

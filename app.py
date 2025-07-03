@@ -14,6 +14,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from copy import copy
+from test_validator import QAATestValidator, format_test_results_for_display
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -1861,6 +1862,103 @@ def generate_qaa_report():
     )
     
     return jsonify(result)
+
+@app.route('/run_tests', methods=['POST'])
+def run_tests():
+    """
+    Run QAA report tests by generating both Simple and Detailed mode reports
+    and validating them against expected results
+    """
+    try:
+        data = request.json
+        session_id = data.get('session_id')
+        test_year = data.get('test_year', '2014-2015')
+        
+        if not session_id or session_id not in session_data:
+            return jsonify({"error": "No valid session found. Please upload the test file first."})
+        
+        # Initialize test validator
+        validator = QAATestValidator()
+        
+        # Get all colleges and years from session for testing
+        df = session_data[session_id]["data"]
+        graduation_years = session_data[session_id]["graduation_years"]
+        
+        # Filter years to only include the test year
+        test_years = [year for year in graduation_years if test_year in year]
+        if not test_years:
+            return jsonify({"error": f"Test year {test_year} not found in uploaded data. Available years: {graduation_years}"})
+        
+        # Use all colleges for comprehensive testing
+        all_colleges = [
+            "College of Engineering & Advan",
+            "College of Business", 
+            "College of Science & General S",
+            "College of Medicine",
+            "College of Pharmacy"
+        ]
+        
+        # Generate Simple mode report
+        simple_result = process_qaa_report(
+            session_id=session_id,
+            colleges=all_colleges,
+            years=test_years,
+            degree_option="all",
+            combine_all=False,
+            combine_years=False,
+            gender_option="all",
+            nationality_option=None,
+            mode_option="simple"
+        )
+        
+        if "error" in simple_result:
+            return jsonify({"error": f"Failed to generate Simple mode report: {simple_result['error']}"})
+        
+        # Generate Detailed mode report with "combine all" for easier validation
+        detailed_result = process_qaa_report(
+            session_id=session_id,
+            colleges=all_colleges,
+            years=test_years,
+            degree_option="all",
+            combine_all=True,  # Force combine all for easier total extraction
+            combine_years=False,
+            gender_option="all",
+            nationality_option=None,
+            mode_option="detailed"
+        )
+        
+        if "error" in detailed_result:
+            return jsonify({"error": f"Failed to generate Detailed mode report: {detailed_result['error']}"})
+        
+        # Get file paths
+        simple_file_path = os.path.join(app.config['GENERATED_FILES'], simple_result['file'])
+        detailed_file_path = os.path.join(app.config['GENERATED_FILES'], detailed_result['file'])
+        
+        # Validate both reports
+        test_results = validator.run_full_test_suite(
+            simple_mode_file=simple_file_path,
+            detailed_mode_file=detailed_file_path,
+            test_year=test_year
+        )
+        
+        # Format results for display
+        formatted_results = format_test_results_for_display(test_results)
+        
+        # Clean up generated test files (optional - keep them for debugging if needed)
+        # os.remove(simple_file_path)
+        # os.remove(detailed_file_path)
+        
+        return jsonify({
+            "status": "success",
+            "overall_passed": test_results["overall_passed"],
+            "test_results": test_results,
+            "formatted_results": formatted_results,
+            "simple_mode_file": simple_result['file'],
+            "detailed_mode_file": detailed_result['file']
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"Test execution failed: {str(e)}"})
 
 @app.route('/generate_alumni_list', methods=['POST'])
 def generate_alumni_list():

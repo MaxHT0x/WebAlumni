@@ -1,0 +1,93 @@
+{
+  "test_info": {
+    "description": "Expected results for QAA report testing",
+    "test_file": "test_data_2014_2015.xlsx",
+    "created": "2025-01-02",
+    "notes": "These expectations match the controlled test data for 2014-2015 academic year"
+  },
+  "detailed_mode": {
+    "2014-2015": {
+      "total_graduates": 251,
+      "description": "Detailed mode with 'Combine all results' option should show total of 251 graduates",
+      "test_parameters": {
+        "colleges": "all",
+        "years": ["2014-2015 FALL", "2014-2015 Spring", "2014-2015 Summer"],
+        "degree_option": "all",
+        "combine_all": true,
+        "gender_option": "all",
+        "nationality_option": null
+      }
+    }
+  },
+  "simple_mode": {
+    "2014-2015": {
+      "total_graduates": 251,
+      "gentlemen": 162,
+      "ladies": 89,
+      "description": "Simple mode should show gender breakdown for 2014-2015 academic year",
+      "college_breakdown": {
+        "College of Engineering & Advan": {
+          "total": 70,
+          "gentlemen": 45,
+          "ladies": 25
+        },
+        "College of Business": {
+          "total": 75,
+          "gentlemen": 40,
+          "ladies": 35
+        },
+        "College of Science & General S": {
+          "total": 60,
+          "gentlemen": 37,
+          "ladies": 23
+        },
+        "College of Medicine": {
+          "total": 30,
+          "gentlemen": 25,
+          "ladies": 5
+        },
+        "College of Pharmacy": {
+          "total": 16,
+          "gentlemen": 15,
+          "ladies": 1
+        }
+      },
+      "test_parameters": {
+        "colleges": "all",
+        "years": ["2014-2015 FALL", "2014-2015 Spring", "2014-2015 Summer"],
+        "mode_option": "simple"
+      }
+    }
+  },
+  "validation_notes": {
+    "detailed_mode": [
+      "Look for 'Total' column in the combined report",
+      "Sum all values in Total column to get graduate count",
+      "The exact location may vary based on number of majors"
+    ],
+    "simple_mode": [
+      "Look for worksheet named '2014-2015' or '2014_2015'",
+      "Find 'Gentlemen' and 'Ladies' columns",
+      "Sum college totals for each gender",
+      "Total should equal gentlemen + ladies"
+    ]
+  },
+  "expansion_template": {
+    "new_year_example": {
+      "detailed_mode": {
+        "YYYY-YYYY": {
+          "total_graduates": 0,
+          "description": "Add description here"
+        }
+      },
+      "simple_mode": {
+        "YYYY-YYYY": {
+          "total_graduates": 0,
+          "gentlemen": 0,
+          "ladies": 0,
+          "description": "Add description here"
+        }
+      }
+    }
+  }
+}
