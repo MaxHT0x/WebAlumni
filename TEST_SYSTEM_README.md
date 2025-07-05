@@ -2,54 +2,110 @@
 
 ## Overview
 
-This test system provides **integrated testing** for the WebAlumni QAA report functionality directly within the web interface. Instead of external test scripts, users can now validate report accuracy with a simple button click.
+This test system provides **fully automated testing** for the WebAlumni QAA report functionality. No manual file uploads required - test files are automatically loaded and results are displayed in a dedicated page.
 
 ## Key Features
 
+✅ **Automatic File Loading** - Test files are pre-included in the project  
 ✅ **Real User Workflow Testing** - Tests the exact same process users follow  
 ✅ **True Integration Testing** - Validates complete pipeline from upload to Excel generation  
+✅ **Multi-Year Testing** - Test multiple academic years simultaneously  
+✅ **Employment Status Validation** - Validates detailed employment breakdowns (Employed/Unemployed/Studying)  
 ✅ **Separate Validation Logic** - Test verification code is completely separate from report generation  
-✅ **Easy to Use** - Simple "Run Tests" button in the web interface  
+✅ **Dedicated Results Page** - Results open in a new tab for better visibility  
 ✅ **Easy to Expand** - Designed for adding new test scenarios
 
 ## How It Works
 
-### 1. **Upload Test Data**
-- Use the provided `test_data_2014_2015.xlsx` file (251 graduates: 162 male, 89 female)
-- Upload through the normal file upload interface
+### 1. **Navigate to Test Results Tab**
+- Open the web application
+- Click on the "Test Results" tab (5th tab in navigation)
+- No file uploads needed - test files are automatically loaded from project root:
+  - `test_data_2014_2015.xlsx` (251 graduates: 162M, 89F)
+  - `test_data_2015_2016.xlsx` (285 graduates: 180M, 105F)
+  - `test_data_2016_2017.xlsx` (320 graduates: 200M, 120F)
 
-### 2. **Run Tests** 
-- Click the **"Run Tests"** button next to "Generate QAA Report"
+### 2. **Configure Tests** 
+- Select test years: 2014-2015, 2015-2016, 2016-2017
+- Toggle "Include Status Testing" for employment breakdown validation
+- All test files are automatically available
+
+### 3. **Run Tests** 
+- Click **"Run Automatic Tests"** button
+- New tab opens immediately with a dedicated test results page
 - System automatically:
-  - Generates Simple mode report 
-  - Generates Detailed mode report (with "combine all")
+  - Loads test files for selected years
+  - Generates Simple mode report(s) for selected years
+  - Generates Detailed mode report(s) (with "combine all")
   - Parses the actual Excel files
-  - Compares results with expected values
+  - Compares results with expected values including status breakdowns
 
-### 3. **View Results**
-- ✅ **PASS**: Green success message with detailed breakdown
-- ❌ **FAIL**: Orange warning with specific errors found
-- Detailed results show expected vs actual counts
+### 4. **View Results**
+- Results appear in real-time in the dedicated test page
+- Each year gets its own result card with clear formatting
+- ✅ **PASS**: Green indicators with detailed breakdown
+- ❌ **FAIL**: Error messages with specific issues found
+- Results show expected vs actual counts for all tested years
 
 ## Test Coverage
 
 ### Simple Mode Tests
-- ✅ Total graduates: 251
-- ✅ Gentlemen: 162  
-- ✅ Ladies: 89
-- ✅ Academic year grouping (2014-2015)
+- ✅ Total graduates per year
+- ✅ Gender breakdown (Gentlemen/Ladies)  
+- ✅ Academic year grouping
+- ✅ Multi-year testing
 
 ### Detailed Mode Tests  
-- ✅ Total graduates: 251 (with "combine all" option)
+- ✅ Total graduates (with "combine all" option)
+- ✅ Employment status breakdown (Employed/Unemployed/Studying)
 - ✅ Excel structure parsing
-- ✅ Total column validation
+- ✅ Employment stats validation
+
+### Multi-Year Testing
+- ✅ 2014-2015: 251 graduates (162M, 89F) - Basic validation
+- ✅ 2015-2016: 285 graduates (180M, 105F) - With status breakdown: 200 Employed, 57 Unemployed, 28 Studying
+- ✅ 2016-2017: 320 graduates (200M, 120F) - With status breakdown: 224 Employed, 64 Unemployed, 32 Studying
+
+### Data Quality Testing
+The test data includes comprehensive status value variations to validate the system's data cleaning and normalization capabilities:
+
+**✅ Standard Status Values (11 total):**
+- "Employed", "New graduate", "Unemployed", "Business Owner", "Studying", "Training"
+- "Others", "Do Not Contact", "Left The Country", "Passed Away", "Employed - Add to List"
+
+**✅ Whitespace Variations (13 variations):**
+- Leading spaces: `" Employed"`, `" Unemployed"`, `" Business Owner"`
+- Trailing spaces: `"Employed "`, `"New graduate "`, `"Training "`
+- Multiple spaces: `"  Employed  "`
+
+**✅ Case Variations (15 variations):**
+- Lowercase: `"employed"`, `"unemployed"`, `"business owner"`, `"new graduate"`
+- Uppercase: `"EMPLOYED"`, `"UNEMPLOYED"`, `"BUSINESS OWNER"`, `"NEW GRADUATE"`
+- Mixed case: `"eMpLoYeD"`, `"UnEmPlOyEd"`, `"Business OWNER"`, `"Do Not CONTACT"`
+
+**Total Status Variations: 39 different values**
+
+This comprehensive test data validates:
+- Status normalization (`clean_status()` function)
+- Validation system's detection of problematic data
+- Whitespace handling and case sensitivity
+- Real-world data quality scenarios
 
 ## Files Created
 
-1. **`test_data_2014_2015.xlsx`** - Test data file with known graduate counts
-2. **`test_validator.py`** - Excel validation logic (separate from app.py)
-3. **`test_expectations.json`** - Expected results configuration
-4. **`create_test_data_2014_2015.py`** - Script to regenerate test data if needed
+1. **Test Data Files**:
+   - `test_data_2014_2015.xlsx` - 251 graduates with status variations
+   - `test_data_2015_2016.xlsx` - 285 graduates with controlled status distribution
+   - `test_data_2016_2017.xlsx` - 320 graduates with controlled status distribution
+
+2. **Test Infrastructure**:
+   - `test_validator.py` - Excel validation logic (separate from app.py)
+   - `test_expectations.json` - Expected results configuration with multi-year support
+   
+3. **Data Generation Scripts**:
+   - `create_test_data_2014_2015.py`
+   - `create_test_data_2015_2016.py` 
+   - `create_test_data_2016_2017.py`
 
 ## Using the Test System
 
@@ -59,50 +115,34 @@ source venv/bin/activate
 python3 app.py
 ```
 
-### Step 2: Upload Test File
+### Step 2: Navigate to Test Results
 1. Navigate to `http://127.0.0.1:5000/`
-2. Upload `test_data_2014_2015.xlsx` using the file upload area
+2. Click on the **"Test Results"** tab (5th tab in navigation)
 
-### Step 3: Run Tests
-1. Go to the "QAA Report" tab
-2. Click **"Run Tests"** button (🧪 icon)
-3. Wait for test execution (generates 2 reports and validates them)
-4. Review test results in the alert area
+### Step 3: Configure Tests
+1. Select which years to test (2014-2015, 2015-2016, 2016-2017)
+2. Toggle "Include Status Testing" if desired
+3. Test files are automatically available - no uploads needed
 
-### Step 4: Interpret Results
+### Step 4: Run Tests
+1. Click **"Run Automatic Tests"** button
+2. New tab opens with dedicated test results page
+3. Watch real-time progress as tests execute sequentially
+
+### Step 5: Interpret Results
+
+Results appear in the dedicated test results page as individual cards for each year:
 
 **✅ Success Example:**
-```
-🧪 QAA Report Test Results for 2014-2015
-==================================================
-
-📊 SIMPLE MODE:
-   ✅ Total graduates: 251 (expected: 251)
-   ✅ Gentlemen: 162 (expected: 162)  
-   ✅ Ladies: 89 (expected: 89)
-
-📈 DETAILED MODE:
-   ✅ Total graduates: 251 (expected: 251)
-
-🎯 SUMMARY:
-   ✅ Simple mode tests PASSED
-   ✅ Detailed mode tests PASSED
-
-🎉 ALL TESTS PASSED! 🎉
-```
+- Header shows "WebAlumni Test Results" with selected years and start time
+- Each year appears as a separate card with clear formatting
+- Test output shows detailed pass/fail for Simple and Detailed modes
+- Real-time status updates during execution
 
 **❌ Failure Example:**
-```
-🧪 QAA Report Test Results for 2014-2015
-==================================================
-
-📊 SIMPLE MODE:
-   ❌ Total graduates: 248 (expected: 251)
-   ❌ Gentlemen: 160 (expected: 162)
-   ✅ Ladies: 89 (expected: 89)
-
-⚠️ SOME TESTS FAILED ⚠️
-```
+- Error cards show specific issues found
+- Clear indication of which tests passed vs failed
+- Detailed error messages for debugging
 
 ## Adding New Test Scenarios
 
@@ -131,21 +171,19 @@ python3 app.py
 ```
 
 ### 3. Update Frontend (Optional)
-```javascript
-// Modify runQaaTests() function to support multiple test years
-test_year: '2015-2016'  // or make it selectable
-```
+- Test year selection is now built into the UI
+- Multi-year testing is automatically supported
 
 ## Troubleshooting
 
 ### Common Issues
 
-**"No session available"**
-- Upload the test Excel file first before running tests
+**"Please select at least one test year"**
+- Select checkboxes for test years before clicking "Run Automatic Tests"
 
-**"Test year 2014-2015 not found"** 
-- Verify the uploaded file contains 2014-2015 graduation terms
-- Check that the file matches the expected structure
+**"Failed to load test file for [year]"** 
+- Verify the test data file exists in the project directory
+- Check file permissions and accessibility
 
 **"Could not find 'Total' column"**
 - Detailed mode Excel structure might have changed
@@ -160,10 +198,10 @@ test_year: '2015-2016'  // or make it selectable
 The validator uses smart logic to find the correct totals in Excel files:
 
 **Detailed Mode Validation:**
-- Locates the "Total" column in the Excel header
-- Searches for a row where the first column contains "Overall Total" (case-insensitive)
-- Extracts the value from that specific row only
-- **Why**: Prevents summing individual major totals + overall total (which would be wrong)
+- Locates the "Total" column for graduate count validation
+- For status validation, finds the Employment Stats section (after empty columns)
+- Reads aggregated Employed/Unemployed/Studying columns, not individual status columns
+- **Why**: The Employment Stats section contains properly calculated totals that match the app's employment logic
 
 **Simple Mode Validation:**
 - Locates "Gentlemen" and "Ladies" columns (or "Male"/"Female" as fallback)
@@ -184,14 +222,17 @@ To debug validation issues:
 ## Technical Architecture
 
 ### Frontend Integration
-- **Button**: Added to QAA Report tab alongside "Generate QAA Report"
-- **JavaScript**: `runQaaTests()` function handles UI and API calls
-- **User Experience**: Same loading/alert patterns as normal report generation
+- **Dedicated Tab**: "Test Results" tab with clean configuration interface
+- **Test Configuration**: UI for selecting test years and options without file uploads
+- **JavaScript**: `runAutomaticTests()` function opens new tab for results
+- **User Experience**: Real-time progress and dedicated results page
 
 ### Backend Integration  
-- **Endpoint**: `/run_tests` route in `app.py`
+- **Automatic Loading**: `/load_test_file` endpoint loads Excel files from project root directory
+- **Enhanced Testing**: `/run_tests` route supports multi-year testing
 - **Process**: Uses existing `process_qaa_report()` function for actual report generation
-- **Validation**: Separate `test_validator.py` module parses generated Excel files
+- **Validation**: Enhanced `test_validator.py` with employment status extraction
+- **Multi-Year Support**: Sequential testing to avoid conflicts
 
 ### Separation of Concerns
 - **Report Generation**: `app.py` (what we're testing)
@@ -200,11 +241,14 @@ To debug validation issues:
 
 ## Benefits of This Approach
 
-1. **User-Friendly**: Anyone can run tests, not just developers
-2. **Real Environment**: Tests in actual browser/session environment  
-3. **Integration Testing**: Catches bugs in the complete workflow
-4. **Maintainable**: Easy to update expectations and add new scenarios
-5. **Immediate Feedback**: Results show instantly in the web interface
-6. **True Validation**: Tests actual Excel output, not parallel logic
+1. **Fully Automated**: No manual file uploads - everything is built-in
+2. **User-Friendly**: Anyone can run tests with a single click
+3. **Real Environment**: Tests in actual browser/session environment  
+4. **Integration Testing**: Catches bugs in the complete workflow
+5. **Multi-Year Capability**: Test multiple academic years simultaneously
+6. **Employment Validation**: Validates complex employment status calculations
+7. **Dedicated Results**: Clear, readable results in a separate page
+8. **True Validation**: Tests actual Excel output, not parallel logic
+9. **Maintainable**: Easy to update expectations and add new scenarios
 
-This test system turns quality assurance into a **user feature** rather than a developer chore, while providing genuine validation of the application's core functionality.
+This test system provides **one-click quality assurance** that validates the application's core functionality using the exact same code paths that real users experience.

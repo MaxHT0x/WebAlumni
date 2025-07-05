@@ -42,7 +42,7 @@ class QAATestValidator:
     
     def validate_detailed_mode_excel(self, excel_file_path: str, test_year: str = "2014-2015") -> Dict:
         """
-        Validate detailed mode Excel file
+        Validate detailed mode Excel file with status breakdown
         For detailed mode with 'combine all', we need to find the Total column and sum it
         """
         results = {
@@ -103,15 +103,56 @@ class QAATestValidator:
             expected = self.expectations.get("detailed_mode", {}).get(test_year, {})
             expected_total = expected.get("total_graduates", 0)
             
-            # Validate
-            if total_graduates == expected_total:
-                results["passed"] = True
+            # Validate total graduates
+            total_passed = total_graduates == expected_total
+            if total_passed:
                 results["details"].append(f"✅ Total graduates: {total_graduates} (expected: {expected_total})")
             else:
                 results["details"].append(f"❌ Total graduates: {total_graduates} (expected: {expected_total})")
             
             results["actual_total"] = total_graduates
             results["expected_total"] = expected_total
+            
+            # NEW: Status breakdown validation (if expected data exists)
+            status_passed = True
+            if expected.get("employed_count") is not None:
+                employed_count = self._extract_status_count(data_sheet, "Employed", total_column_index)
+                unemployed_count = self._extract_status_count(data_sheet, "Unemployed", total_column_index)
+                studying_count = self._extract_status_count(data_sheet, "Studying", total_column_index)
+                
+                expected_employed = expected.get("employed_count", 0)
+                expected_unemployed = expected.get("unemployed_count", 0)
+                expected_studying = expected.get("studying_count", 0)
+                
+                # Validate each status
+                if employed_count == expected_employed:
+                    results["details"].append(f"✅ Employed: {employed_count} (expected: {expected_employed})")
+                else:
+                    results["details"].append(f"❌ Employed: {employed_count} (expected: {expected_employed})")
+                    status_passed = False
+                
+                if unemployed_count == expected_unemployed:
+                    results["details"].append(f"✅ Unemployed: {unemployed_count} (expected: {expected_unemployed})")
+                else:
+                    results["details"].append(f"❌ Unemployed: {unemployed_count} (expected: {expected_unemployed})")
+                    status_passed = False
+                
+                if studying_count == expected_studying:
+                    results["details"].append(f"✅ Studying: {studying_count} (expected: {expected_studying})")
+                else:
+                    results["details"].append(f"❌ Studying: {studying_count} (expected: {expected_studying})")
+                    status_passed = False
+                
+                # Store actual values
+                results["actual_employed"] = employed_count
+                results["actual_unemployed"] = unemployed_count
+                results["actual_studying"] = studying_count
+                results["expected_employed"] = expected_employed
+                results["expected_unemployed"] = expected_unemployed
+                results["expected_studying"] = expected_studying
+            
+            # Overall pass/fail
+            results["passed"] = total_passed and status_passed
             
         except Exception as e:
             results["errors"].append(f"Error validating detailed mode Excel: {str(e)}")
@@ -252,6 +293,140 @@ class QAATestValidator:
         
         return results
     
+    def _extract_status_count(self, sheet, status_name: str, total_column_index: int) -> int:
+        """Extract count for specific employment status from Excel sheet"""
+        try:
+            # In detailed mode Excel, there are TWO sections:
+            # 1. Individual status columns (Business owner, Employed, New graduate, etc.)
+            # 2. Employment stats columns (aggregated Employed, Unemployed, Studying)
+            # 
+            # We need to read from the EMPLOYMENT STATS section, which comes after empty columns
+            
+            # Find the employment stats section by looking for the aggregated columns
+            # These come after empty column(s) and contain the properly calculated totals
+            
+            employment_stats_columns = {}
+            
+            # Scan all headers to find the employment stats section
+            for col in range(1, sheet.max_column + 1):
+                header_cell = sheet.cell(row=1, column=col).value
+                if header_cell and isinstance(header_cell, str):
+                    header_clean = header_cell.strip()
+                    
+                    # Look for the employment stats columns (these are the aggregated ones)
+                    if header_clean == "Employed":
+                        # Check if this is in the employment stats section (not individual status section)
+                        # Employment stats section comes after empty columns
+                        is_employment_stats = False
+                        
+                        # Check if there are empty columns before this one
+                        for check_col in range(max(1, col - 3), col):
+                            check_header = sheet.cell(row=1, column=check_col).value
+                            if not check_header or str(check_header).strip() == "":
+                                is_employment_stats = True
+                                break
+                        
+                        if is_employment_stats:
+                            employment_stats_columns["Employed"] = col
+                            
+                    elif header_clean == "Unemployed":
+                        # Similar check for unemployed in employment stats section
+                        is_employment_stats = False
+                        for check_col in range(max(1, col - 3), col):
+                            check_header = sheet.cell(row=1, column=check_col).value
+                            if not check_header or str(check_header).strip() == "":
+                                is_employment_stats = True
+                                break
+                        
+                        if is_employment_stats:
+                            employment_stats_columns["Unemployed"] = col
+                            
+                    elif header_clean == "Studying":
+                        # Similar check for studying in employment stats section
+                        is_employment_stats = False
+                        for check_col in range(max(1, col - 3), col):
+                            check_header = sheet.cell(row=1, column=check_col).value
+                            if not check_header or str(check_header).strip() == "":
+                                is_employment_stats = True
+                                break
+                        
+                        if is_employment_stats:
+                            employment_stats_columns["Studying"] = col
+            
+            # Get the column for the requested status
+            target_column = employment_stats_columns.get(status_name.title())
+            
+            if not target_column:
+                return 0
+            
+            # Sum all values in this column (excluding header and "Overall Total" row)
+            total_count = 0
+            for row in range(2, sheet.max_row + 1):  # Skip header row
+                # Skip the "Overall Total" row to avoid double counting
+                first_cell = sheet.cell(row=row, column=1).value
+                if first_cell and isinstance(first_cell, str) and "overall total" in first_cell.lower():
+                    continue
+                    
+                cell_value = sheet.cell(row=row, column=target_column).value
+                if cell_value and isinstance(cell_value, (int, float)):
+                    total_count += int(cell_value)
+            
+            return total_count
+            
+        except Exception as e:
+            return 0  # Return 0 on error
+    
+    def run_multi_year_test_suite(self, test_years: List[str], file_paths: Dict[str, Dict[str, str]]) -> Dict:
+        """
+        Run tests across multiple years
+        
+        Args:
+            test_years: ["2014-2015", "2015-2016", "2016-2017"]
+            file_paths: {
+                "2014-2015": {"simple": "path1", "detailed": "path2"},
+                "2015-2016": {"simple": "path3", "detailed": "path4"},
+                # ...
+            }
+        """
+        results = {
+            "overall_passed": False,
+            "years_tested": test_years,
+            "year_results": {},
+            "summary": []
+        }
+        
+        all_passed = True
+        for year in test_years:
+            if year not in file_paths:
+                results["summary"].append(f"❌ No file paths provided for year {year}")
+                all_passed = False
+                continue
+                
+            year_result = self.run_full_test_suite(
+                file_paths[year]["simple"], 
+                file_paths[year]["detailed"], 
+                year
+            )
+            results["year_results"][year] = year_result
+            
+            if not year_result["overall_passed"]:
+                all_passed = False
+        
+        results["overall_passed"] = all_passed
+        
+        # Generate summary
+        for year in test_years:
+            if year in results["year_results"]:
+                year_result = results["year_results"][year]
+                if year_result["overall_passed"]:
+                    results["summary"].append(f"✅ {year}: All tests passed")
+                else:
+                    results["summary"].append(f"❌ {year}: Some tests failed")
+            else:
+                results["summary"].append(f"❌ {year}: No results available")
+        
+        return results
+    
     def run_full_test_suite(self, simple_mode_file: str, detailed_mode_file: str, test_year: str = "2014-2015") -> Dict:
         """
         Run complete test suite on both Simple and Detailed mode files
@@ -325,6 +500,62 @@ def format_test_results_for_display(results: Dict) -> str:
         output.append("\n🎉 ALL TESTS PASSED! 🎉")
     else:
         output.append("\n⚠️  SOME TESTS FAILED ⚠️")
+    
+    return "\n".join(output)
+
+def format_multi_year_test_results_for_display(results: Dict) -> str:
+    """Format multi-year test results for web interface display"""
+    output = []
+    years_tested = results.get("years_tested", [])
+    output.append(f"🧪 Multi-Year QAA Report Test Results")
+    output.append(f"Years tested: {', '.join(years_tested)}")
+    output.append("=" * 60)
+    
+    # Results for each year
+    for year in years_tested:
+        year_result = results.get("year_results", {}).get(year, {})
+        if not year_result:
+            output.append(f"\n❌ {year}: No results available")
+            continue
+            
+        output.append(f"\n🗓️  {year}:")
+        output.append("-" * 20)
+        
+        # Simple mode for this year
+        simple = year_result.get("simple_mode", {})
+        output.append("📊 Simple Mode:")
+        if simple.get("errors"):
+            for error in simple["errors"]:
+                output.append(f"   ❌ ERROR: {error}")
+        else:
+            for detail in simple.get("details", []):
+                output.append(f"   {detail}")
+        
+        # Detailed mode for this year
+        detailed = year_result.get("detailed_mode", {})
+        output.append("📈 Detailed Mode:")
+        if detailed.get("errors"):
+            for error in detailed["errors"]:
+                output.append(f"   ❌ ERROR: {error}")
+        else:
+            for detail in detailed.get("details", []):
+                output.append(f"   {detail}")
+        
+        # Year summary
+        if year_result.get("overall_passed", False):
+            output.append(f"   ✅ {year} - ALL TESTS PASSED")
+        else:
+            output.append(f"   ❌ {year} - SOME TESTS FAILED")
+    
+    # Overall summary
+    output.append(f"\n🎯 OVERALL SUMMARY:")
+    for summary_item in results.get("summary", []):
+        output.append(f"   {summary_item}")
+    
+    if results.get("overall_passed", False):
+        output.append("\n🎉 ALL YEARS PASSED! 🎉")
+    else:
+        output.append("\n⚠️  SOME YEARS FAILED ⚠️")
     
     return "\n".join(output)
 

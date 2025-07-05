@@ -1,9 +1,10 @@
 {
   "test_info": {
     "description": "Expected results for QAA report testing",
-    "test_file": "test_data_2014_2015.xlsx",
+    "test_files": ["test_data_2014_2015.xlsx", "test_data_2015_2016.xlsx", "test_data_2016_2017.xlsx"],
     "created": "2025-01-02",
-    "notes": "These expectations match the controlled test data for 2014-2015 academic year"
+    "updated": "2025-07-03",
+    "notes": "These expectations match the controlled test data for multiple academic years with status testing"
   },
   "detailed_mode": {
     "2014-2015": {
@@ -12,6 +13,36 @@
       "test_parameters": {
         "colleges": "all",
         "years": ["2014-2015 FALL", "2014-2015 Spring", "2014-2015 Summer"],
+        "degree_option": "all",
+        "combine_all": true,
+        "gender_option": "all",
+        "nationality_option": null
+      }
+    },
+    "2015-2016": {
+      "total_graduates": 285,
+      "employed_count": 200,
+      "unemployed_count": 57,
+      "studying_count": 28,
+      "description": "Detailed mode with 'Combine all results' option should show total of 285 graduates with status breakdown",
+      "test_parameters": {
+        "colleges": "all",
+        "years": ["2015-2016 FALL", "2015-2016 Spring", "2015-2016 Summer"],
+        "degree_option": "all",
+        "combine_all": true,
+        "gender_option": "all",
+        "nationality_option": null
+      }
+    },
+    "2016-2017": {
+      "total_graduates": 320,
+      "employed_count": 224,
+      "unemployed_count": 64,
+      "studying_count": 32,
+      "description": "Detailed mode with 'Combine all results' option should show total of 320 graduates with status breakdown",
+      "test_parameters": {
+        "colleges": "all",
+        "years": ["2016-2017 FALL", "2016-2017 Spring", "2016-2017 Summer"],
         "degree_option": "all",
         "combine_all": true,
         "gender_option": "all",
@@ -57,13 +88,100 @@
         "years": ["2014-2015 FALL", "2014-2015 Spring", "2014-2015 Summer"],
         "mode_option": "simple"
       }
+    },
+    "2015-2016": {
+      "total_graduates": 285,
+      "gentlemen": 180,
+      "ladies": 105,
+      "description": "Simple mode should show gender breakdown for 2015-2016 academic year",
+      "college_breakdown": {
+        "College of Engineering & Advan": {
+          "total": 85,
+          "gentlemen": 55,
+          "ladies": 30
+        },
+        "College of Business": {
+          "total": 85,
+          "gentlemen": 45,
+          "ladies": 40
+        },
+        "College of Science & General S": {
+          "total": 65,
+          "gentlemen": 40,
+          "ladies": 25
+        },
+        "College of Medicine": {
+          "total": 33,
+          "gentlemen": 25,
+          "ladies": 8
+        },
+        "College of Pharmacy": {
+          "total": 17,
+          "gentlemen": 15,
+          "ladies": 2
+        }
+      },
+      "test_parameters": {
+        "colleges": "all",
+        "years": ["2015-2016 FALL", "2015-2016 Spring", "2015-2016 Summer"],
+        "mode_option": "simple"
+      }
+    },
+    "2016-2017": {
+      "total_graduates": 320,
+      "gentlemen": 200,
+      "ladies": 120,
+      "description": "Simple mode should show gender breakdown for 2016-2017 academic year",
+      "college_breakdown": {
+        "College of Engineering & Advan": {
+          "total": 100,
+          "gentlemen": 65,
+          "ladies": 35
+        },
+        "College of Business": {
+          "total": 100,
+          "gentlemen": 55,
+          "ladies": 45
+        },
+        "College of Science & General S": {
+          "total": 75,
+          "gentlemen": 45,
+          "ladies": 30
+        },
+        "College of Medicine": {
+          "total": 32,
+          "gentlemen": 25,
+          "ladies": 7
+        },
+        "College of Pharmacy": {
+          "total": 13,
+          "gentlemen": 10,
+          "ladies": 3
+        }
+      },
+      "test_parameters": {
+        "colleges": "all",
+        "years": ["2016-2017 FALL", "2016-2017 Spring", "2016-2017 Summer"],
+        "mode_option": "simple"
+      }
     }
+  },
+  "status_categories": {
+    "employed_statuses": [
+      "Employed", "Employed - add to list", "Business owner", "Training", 
+      "Do not contact", "Others", "Left the country", "Passed away", "New graduate"
+    ],
+    "unemployed_statuses": ["Unemployed"],
+    "studying_statuses": ["Studying"],
+    "description": "Status categories for employment breakdown validation in detailed mode reports (normalized to Title case by clean_status function)"
   },
   "validation_notes": {
     "detailed_mode": [
       "Look for 'Total' column in the combined report",
       "Sum all values in Total column to get graduate count",
-      "The exact location may vary based on number of majors"
+      "The exact location may vary based on number of majors",
+      "For status breakdown, look for 'Employed', 'Unemployed', 'Studying' rows",
+      "Sum counts for each status category based on status_categories mapping"
     ],
     "simple_mode": [
       "Look for worksheet named '2014-2015' or '2014_2015'",

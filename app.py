@@ -14,7 +14,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from copy import copy
-from test_validator import QAATestValidator, format_test_results_for_display
+from test_validator import QAATestValidator, format_test_results_for_display, format_multi_year_test_results_for_display
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -1669,6 +1669,56 @@ def upload_file():
     
     return jsonify({"error": "Invalid file format. Please upload an Excel file (.xls or .xlsx)"})
 
+@app.route('/load_test_file', methods=['POST'])
+def load_test_file():
+    """
+    Automatically load a predefined test data file based on the year
+    """
+    try:
+        data = request.json
+        test_year = data.get('test_year')
+        
+        if not test_year:
+            return jsonify({"error": "test_year parameter is required"})
+        
+        # Map test years to their corresponding files
+        test_file_mapping = {
+            '2014-2015': 'test_data_2014_2015.xlsx',
+            '2015-2016': 'test_data_2015_2016.xlsx', 
+            '2016-2017': 'test_data_2016_2017.xlsx'
+        }
+        
+        if test_year not in test_file_mapping:
+            return jsonify({"error": f"No test file available for year {test_year}. Available years: {list(test_file_mapping.keys())}"})
+        
+        test_filename = test_file_mapping[test_year]
+        test_file_path = os.path.join(os.getcwd(), test_filename)
+        
+        # Check if the test file exists
+        if not os.path.exists(test_file_path):
+            return jsonify({"error": f"Test file {test_filename} not found in project directory"})
+        
+        # Create a session ID for this test file
+        session_id = uuid.uuid4().hex
+        
+        # Copy the test file to uploads directory (to follow existing pattern)
+        uploaded_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{session_id}_{test_filename}")
+        shutil.copy2(test_file_path, uploaded_file_path)
+        
+        # Process the file using the same logic as the upload endpoint
+        result = load_excel_data(uploaded_file_path, session_id)
+        
+        # Add the session ID to the result
+        if isinstance(result, dict) and "error" not in result:
+            result["session_id"] = session_id
+            result["test_file_loaded"] = test_filename
+            result["test_year"] = test_year
+            
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to load test file: {str(e)}"})
+
 @app.route('/get_constants')
 def get_constants():
     session_id = request.args.get('session_id')
@@ -1866,13 +1916,13 @@ def generate_qaa_report():
 @app.route('/run_tests', methods=['POST'])
 def run_tests():
     """
-    Run QAA report tests by generating both Simple and Detailed mode reports
-    and validating them against expected results
+    Run QAA report tests for multiple years with status validation
     """
     try:
         data = request.json
         session_id = data.get('session_id')
-        test_year = data.get('test_year', '2014-2015')
+        test_years = data.get('test_years', ['2014-2015'])  # NEW: Support multiple years
+        include_status_tests = data.get('include_status_tests', True)  # NEW: Status testing flag
         
         if not session_id or session_id not in session_data:
             return jsonify({"error": "No valid session found. Please upload the test file first."})
@@ -1884,11 +1934,6 @@ def run_tests():
         df = session_data[session_id]["data"]
         graduation_years = session_data[session_id]["graduation_years"]
         
-        # Filter years to only include the test year
-        test_years = [year for year in graduation_years if test_year in year]
-        if not test_years:
-            return jsonify({"error": f"Test year {test_year} not found in uploaded data. Available years: {graduation_years}"})
-        
         # Use all colleges for comprehensive testing
         all_colleges = [
             "College of Engineering & Advan",
@@ -1898,63 +1943,89 @@ def run_tests():
             "College of Pharmacy"
         ]
         
-        # Generate Simple mode report
-        simple_result = process_qaa_report(
-            session_id=session_id,
-            colleges=all_colleges,
-            years=test_years,
-            degree_option="all",
-            combine_all=False,
-            combine_years=False,
-            gender_option="all",
-            nationality_option=None,
-            mode_option="simple"
-        )
+        # NEW: Multi-year testing logic
+        all_results = {}
+        file_paths = {}
         
-        if "error" in simple_result:
-            return jsonify({"error": f"Failed to generate Simple mode report: {simple_result['error']}"})
+        for test_year in test_years:
+            # Filter years to only include the current test year
+            year_terms = [year for year in graduation_years if test_year in year]
+            if not year_terms:
+                return jsonify({"error": f"Test year {test_year} not found in uploaded data. Available years: {graduation_years}"})
+            
+            # Generate Simple mode report for this year
+            simple_result = process_qaa_report(
+                session_id=session_id,
+                colleges=all_colleges,
+                years=year_terms,
+                degree_option="all",
+                combine_all=False,
+                combine_years=False,
+                gender_option="all",
+                nationality_option=None,
+                mode_option="simple"
+            )
+            
+            if "error" in simple_result:
+                return jsonify({"error": f"Failed to generate Simple mode report for {test_year}: {simple_result['error']}"})
+            
+            # Generate Detailed mode report with "combine all" for easier validation
+            detailed_result = process_qaa_report(
+                session_id=session_id,
+                colleges=all_colleges,
+                years=year_terms,
+                degree_option="all",
+                combine_all=True,  # Force combine all for easier total extraction
+                combine_years=False,
+                gender_option="all",
+                nationality_option=None,
+                mode_option="detailed"
+            )
+            
+            if "error" in detailed_result:
+                return jsonify({"error": f"Failed to generate Detailed mode report for {test_year}: {detailed_result['error']}"})
+            
+            # Store file paths for this year
+            simple_file_path = os.path.join(app.config['GENERATED_FILES'], simple_result['file'])
+            detailed_file_path = os.path.join(app.config['GENERATED_FILES'], detailed_result['file'])
+            
+            file_paths[test_year] = {
+                "simple": simple_file_path,
+                "detailed": detailed_file_path
+            }
+            
+            # Store file names for response
+            all_results[test_year] = {
+                "simple_mode_file": simple_result['file'],
+                "detailed_mode_file": detailed_result['file']
+            }
         
-        # Generate Detailed mode report with "combine all" for easier validation
-        detailed_result = process_qaa_report(
-            session_id=session_id,
-            colleges=all_colleges,
-            years=test_years,
-            degree_option="all",
-            combine_all=True,  # Force combine all for easier total extraction
-            combine_years=False,
-            gender_option="all",
-            nationality_option=None,
-            mode_option="detailed"
-        )
-        
-        if "error" in detailed_result:
-            return jsonify({"error": f"Failed to generate Detailed mode report: {detailed_result['error']}"})
-        
-        # Get file paths
-        simple_file_path = os.path.join(app.config['GENERATED_FILES'], simple_result['file'])
-        detailed_file_path = os.path.join(app.config['GENERATED_FILES'], detailed_result['file'])
-        
-        # Validate both reports
-        test_results = validator.run_full_test_suite(
-            simple_mode_file=simple_file_path,
-            detailed_mode_file=detailed_file_path,
-            test_year=test_year
-        )
-        
-        # Format results for display
-        formatted_results = format_test_results_for_display(test_results)
+        # NEW: Run multi-year validation if multiple years, otherwise single year
+        if len(test_years) > 1:
+            test_results = validator.run_multi_year_test_suite(test_years, file_paths)
+            formatted_results = format_multi_year_test_results_for_display(test_results)
+        else:
+            # Single year testing (backward compatibility)
+            test_year = test_years[0]
+            test_results = validator.run_full_test_suite(
+                simple_mode_file=file_paths[test_year]["simple"],
+                detailed_mode_file=file_paths[test_year]["detailed"],
+                test_year=test_year
+            )
+            formatted_results = format_test_results_for_display(test_results)
         
         # Clean up generated test files (optional - keep them for debugging if needed)
-        # os.remove(simple_file_path)
-        # os.remove(detailed_file_path)
+        # for year_files in file_paths.values():
+        #     os.remove(year_files["simple"])
+        #     os.remove(year_files["detailed"])
         
         return jsonify({
             "status": "success",
             "overall_passed": test_results["overall_passed"],
             "test_results": test_results,
             "formatted_results": formatted_results,
-            "simple_mode_file": simple_result['file'],
-            "detailed_mode_file": detailed_result['file']
+            "years_tested": test_years,
+            "file_details": all_results
         })
         
     except Exception as e:

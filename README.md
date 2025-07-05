@@ -9,7 +9,7 @@ This project is a Flask-based web application designed for processing and analyz
 - `uploads/`: Stores uploaded files (ignored by Git).
 - `generated_files/`: Stores processed output files (ignored by Git).
 - `requirements.txt`: Lists the Python dependencies for the project.
-- `.venv/`: Python virtual environment (ignored by Git).
+- `venv/`: Python virtual environment (ignored by Git).
 
 ## Setup and Installation
 

@@ -1,0 +1,87 @@
+The following are possible values that are used in the alumni excel files that use this program:
+
+* "Status" filter possible values:
+Employed
+Business Owner
+Employed - Add to List
+Others
+Do Not Contact
+Studying 
+Unemployed
+Left The Country
+Passed Away
+Unemployed 
+Employed 
+Employed  
+Training
+Studying
+Left The Country 
+Others 
+Do Not Contact 
+New graduate
+
+
+--
+
+* "College" filter possible values:
+College of Business
+College of Engineering & Advan
+College of Medicine
+College of Pharmacy
+College of Science & General S
+
+--
+
+* "Gender" filter possible values:
+Male
+Female
+
+--
+
+* "Major" filter possible values:
+Accounting
+Accounting - Finance
+Entrepreneurship and Family Bu
+Finance
+Finance & Accounting
+Human Resource Management
+Marketing
+Project Management
+Architectural Engineering
+Electrical Engineering
+Industrial Engineering
+Mechanical Engineering
+Software Engineering
+Medicine and Surgery (MBBS)
+Pharm.D
+Life Sciences
+Accounting & Taxation
+General
+Healthcare Management
+Engineering and Systems Mgmt
+Biotechnology
+Clinic Embryology
+Infection Control
+Laboratory Quality Management
+Molecular and Cell Biology
+Transfusion Med and Stem Cell
+Clinical Speech Lang Pathology
+Clinical Psychology
+Genetic Counselling
+Health Policy and Management
+Public Health
+Radiological & Imaging Science
+Nanoscience and Nanotechnology
+Finance & Project Mgmt
+Analytical Biochemistry
+Biostatistics and Epidemiology
+Child Life
+Digital Marketing
+Human Capital Management
+Applied Health Research
+Clinical Anatomy
+Health Research Management
+Business Administration
+General Business
+Aerospace Engineering
+

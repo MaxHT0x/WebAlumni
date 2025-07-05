@@ -18,9 +18,9 @@ The application runs on `http://127.0.0.1:5000/` by default.
 ```bash
 python3 -m venv .venv
 # Windows
-.venv\Scripts\activate
+venv\Scripts\activate
 # macOS/Linux  
-source .venv/bin/activate
+source venv/bin/activate
 
 pip install -r requirements.txt
 ```
@@ -36,7 +36,7 @@ pip install -r requirements.txt
 ### Core Components
 
 **Flask Application (`app.py`)**
-- Single-file Flask application (~1600 lines)
+- Single-file Flask application (~2051 lines)
 - Session-based data storage using in-memory dictionary
 - File upload handling with validation
 - Multiple report generation endpoints
@@ -128,7 +128,7 @@ pip install -r requirements.txt
 
 ### Frontend Architecture
 
-**Single Page Application (~2700 lines)**
+**Single Page Application (~2809 lines)**
 - Monolithic HTML template with embedded CSS (~950 lines) and JavaScript (~1100 lines)
 - Modern responsive design using CSS custom properties (CSS variables)
 - Tab-based navigation with dynamic content switching
@@ -169,13 +169,20 @@ pip install -r requirements.txt
 
 ```
 WebAlumni/
-├── app.py                 # Main Flask application
+├── app.py                        # Main Flask application
+├── CLAUDE.md                     # AI development guidance
+├── README.md                     # Setup and usage documentation
+├── TEST_SYSTEM_README.md         # Test system documentation
+├── requirements.txt              # Python dependencies
 ├── templates/
-│   └── index.html        # Frontend SPA template
-├── uploads/              # Temporary uploaded files (gitignored)
-├── generated_files/      # Generated reports (gitignored)
-├── requirements.txt      # Python dependencies
-└── README.md            # Setup and usage documentation
+│   └── index.html               # Frontend SPA template
+├── uploads/                     # Temporary uploaded files (gitignored)
+├── generated_files/             # Generated reports (gitignored)
+├── venv/                        # Python virtual environment (gitignored)
+├── create_test_data_2014_2015.py # Test data generation script
+├── test_data_2014_2015.xlsx      # Sample test data file
+├── test_expectations.json        # Test validation expectations
+└── test_validator.py             # Test validation script
 ```
 
 ## Data Models

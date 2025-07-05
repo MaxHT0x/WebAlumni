@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """
-Create test Excel file for 2014-2015 with exact known graduate counts
-Total: 251 graduates (162 male, 89 female)
+Create test Excel file for 2015-2016 with exact known graduate and status counts
+Total: 285 graduates (180 male, 105 female)
+Status distribution: 200 Employed, 57 Unemployed, 28 Studying
 """
 
 import pandas as pd
 import random
 
-def create_test_data_2014_2015():
-    """Create controlled test dataset for 2014-2015 validation"""
+def create_test_data_2015_2016():
+    """Create controlled test dataset for 2015-2016 validation"""
     
     # Define exact distribution to match expected results
     college_distribution = {
-        "College of Engineering & Advan": {"Male": 45, "Female": 25},  # 70 total
-        "College of Business": {"Male": 40, "Female": 35},            # 75 total  
-        "College of Science & General S": {"Male": 37, "Female": 23}, # 60 total
-        "College of Medicine": {"Male": 25, "Female": 5},             # 30 total
-        "College of Pharmacy": {"Male": 15, "Female": 1}              # 16 total
+        "College of Engineering & Advan": {"Male": 55, "Female": 30},  # 85 total
+        "College of Business": {"Male": 45, "Female": 40},            # 85 total  
+        "College of Science & General S": {"Male": 40, "Female": 25}, # 65 total
+        "College of Medicine": {"Male": 25, "Female": 8},             # 33 total
+        "College of Pharmacy": {"Male": 15, "Female": 2}              # 17 total
     }
     
     # Verify totals
@@ -29,15 +30,15 @@ def create_test_data_2014_2015():
     print(f"Total Female: {total_female}")
     print(f"Total Graduates: {total_graduates}")
     
-    assert total_male == 162, f"Male count should be 162, got {total_male}"
-    assert total_female == 89, f"Female count should be 89, got {total_female}"
-    assert total_graduates == 251, f"Total should be 251, got {total_graduates}"
+    assert total_male == 180, f"Male count should be 180, got {total_male}"
+    assert total_female == 105, f"Female count should be 105, got {total_female}"
+    assert total_graduates == 285, f"Total should be 285, got {total_graduates}"
     
-    # Create graduation terms for 2014-2015
+    # Create graduation terms for 2015-2016
     graduation_terms = [
-        "2014-2015 FALL",
-        "2014-2015 Spring", 
-        "2014-2015 Summer"
+        "2015-2016 FALL",
+        "2015-2016 Spring", 
+        "2015-2016 Summer"
     ]
     
     # Majors by college for realistic data
@@ -49,27 +50,48 @@ def create_test_data_2014_2015():
         "College of Pharmacy": ["Clinical Pharmacy", "Pharmaceutical Sciences"]
     }
     
-    # Employment statuses for realistic data - comprehensive list with variations for testing
-    employment_statuses = [
-        # Clean standard values (most common)
-        "Employed", "New graduate", "Unemployed", "Business Owner", "Studying", "Training", "Others", "Do Not Contact", "Left The Country", "Passed Away", "Employed - Add to List",
-        
-        # Whitespace variations (testing data quality)
-        "Employed ", " Employed", "  Employed  ", "Unemployed ", " Unemployed",
-        "Business Owner ", " Business Owner", "New graduate ", " New graduate",
-        "Studying ", " Studying", "Training ", " Training",
-        
-        # Case variations (testing normalization)
-        "employed", "EMPLOYED", "business owner", "BUSINESS OWNER", "new graduate", "NEW GRADUATE",
-        "unemployed", "UNEMPLOYED", "studying", "STUDYING", "training", "TRAINING",
-        "others", "OTHERS", "do not contact", "DO NOT CONTACT", "left the country", "LEFT THE COUNTRY",
-        
-        # Mixed case variations (testing robustness)
-        "eMpLoYeD", "Business OWNER", "UnEmPlOyEd", "New Graduate", "Do Not CONTACT"
+    # Employment statuses with specific distribution for testing
+    # Need to create exactly: 200 Employed, 57 Unemployed, 28 Studying
+    
+    # Employment status mapping for detailed mode testing
+    employed_statuses = [
+        "Employed", "Employed - Add to List", "Business Owner", "Training", 
+        "New graduate", "Others", "Do Not Contact", "Left The Country", "Passed Away"
     ]
     
+    # Add variations for data quality testing
+    employed_statuses_with_variations = employed_statuses + [
+        # Whitespace variations
+        "Employed ", " Employed", "  Employed  ", "Business Owner ", " Business Owner",
+        "New graduate ", " New graduate", "Training ", " Training",
+        # Case variations
+        "employed", "EMPLOYED", "business owner", "BUSINESS OWNER", "new graduate", "NEW GRADUATE",
+        "training", "TRAINING", "others", "OTHERS", "do not contact", "DO NOT CONTACT",
+        # Mixed case variations
+        "eMpLoYeD", "Business OWNER", "New Graduate", "Do Not CONTACT"
+    ]
+    
+    unemployed_statuses = ["Unemployed", "Unemployed ", " Unemployed", "unemployed", "UNEMPLOYED", "UnEmPlOyEd"]
+    studying_statuses = ["Studying", "Studying ", " Studying", "studying", "STUDYING", "StUdYiNg"]
+    
+    # Create status distribution list
+    status_distribution = []
+    # Add 200 employed statuses
+    for i in range(200):
+        status_distribution.append(random.choice(employed_statuses_with_variations))
+    # Add 57 unemployed statuses  
+    for i in range(57):
+        status_distribution.append(random.choice(unemployed_statuses))
+    # Add 28 studying statuses
+    for i in range(28):
+        status_distribution.append(random.choice(studying_statuses))
+    
+    # Shuffle the distribution to randomize assignment
+    random.shuffle(status_distribution)
+    
     records = []
-    student_id_counter = 201400000  # Starting with 2014 year prefix
+    student_id_counter = 201500000  # Starting with 2015 year prefix
+    status_index = 0
     
     for college, gender_counts in college_distribution.items():
         for gender, count in gender_counts.items():
@@ -89,7 +111,7 @@ def create_test_data_2014_2015():
                 
                 student_id_counter += 1
                 
-                # Generate record
+                # Generate record with controlled status distribution
                 record = {
                     "Student ID": student_id,
                     "Student Name": f"Test Student {student_id}",
@@ -97,13 +119,14 @@ def create_test_data_2014_2015():
                     "Year/Semester of Graduation": graduation_term,
                     "Major": random.choice(majors_by_college[college]),
                     "Gender": gender,
-                    "Current Status": random.choice(employment_statuses),
+                    "Current Status": status_distribution[status_index],
                     "Current Workplace": f"Test Company {random.randint(1, 100)}",
                     "Current Position": f"Test Position {random.randint(1, 50)}",
                     "Nationality": "Saudi Arabia" if random.random() < 0.7 else "Non-Saudi"
                 }
                 
                 records.append(record)
+                status_index += 1
     
     # Create DataFrame
     df = pd.DataFrame(records)
@@ -128,20 +151,33 @@ def create_test_data_2014_2015():
         female_count = college_gender_counts.get("Female", 0)
         print(f"{college}: {male_count}M + {female_count}F = {male_count + female_count}")
     
+    # Verify status distribution (for testing purposes)
+    print(f"\nStatus distribution verification:")
+    status_counts = df["Current Status"].value_counts()
+    employed_count = sum(status_counts.get(status, 0) for status in employed_statuses_with_variations)
+    unemployed_count = sum(status_counts.get(status, 0) for status in unemployed_statuses)
+    studying_count = sum(status_counts.get(status, 0) for status in studying_statuses)
+    print(f"Employed variations: {employed_count}")
+    print(f"Unemployed variations: {unemployed_count}")
+    print(f"Studying variations: {studying_count}")
+    
     # Sort by graduation term and college for consistency
     df_sorted = df.sort_values(['Year/Semester of Graduation', 'College', 'Gender'])
     
     # Save to Excel file
-    output_file = "/home/rakanlinux/coolProjects/WebAlumni/test_data_2014_2015.xlsx"
+    output_file = "/home/rakanlinux/coolProjects/WebAlumni/test_data_2015_2016.xlsx"
     df_sorted.to_excel(output_file, index=False, sheet_name="Alumni_Data")
     
     print(f"\nCreated test file: {output_file}")
     print(f"This file should produce exactly:")
-    print(f"- Total graduates: 251")
-    print(f"- Male graduates: 162")  
-    print(f"- Female graduates: 89")
+    print(f"- Total graduates: 285")
+    print(f"- Male graduates: 180")  
+    print(f"- Female graduates: 105")
+    print(f"- Employed: 200")
+    print(f"- Unemployed: 57")
+    print(f"- Studying: 28")
     
     return output_file
 
 if __name__ == "__main__":
-    create_test_data_2014_2015()
+    create_test_data_2015_2016()

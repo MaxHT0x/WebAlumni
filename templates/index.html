@@ -949,6 +949,64 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        
+        /* Test Results Tab Styles */
+        .test-files-status ul {
+            list-style: none;
+            padding: 0;
+            margin: 0.5rem 0;
+        }
+        
+        .test-files-status li {
+            padding: 0.25rem 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .file-status {
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+        
+        .test-year-results {
+            margin-bottom: 1rem;
+            border-left: 3px solid var(--primary);
+            padding-left: 1rem;
+        }
+        
+        .test-year-header h4 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        .test-year-content pre {
+            background: var(--gray-50);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--gray-200);
+        }
+        
+        .test-year-results hr {
+            margin: 1.5rem 0;
+            border: none;
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        #testResultsCard {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        #testStatusContent h4 {
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -1006,6 +1064,7 @@
                 <div class="app-tab" data-tab="alumniList">Alumni List</div>
                 <div class="app-tab" data-tab="workplace">Workplace Statistics</div>
                 <div class="app-tab" data-tab="banner">Banner Integration</div>
+                <div class="app-tab" data-tab="testResults">Test Results</div>
             </div>
             
             <!-- Tab content -->
@@ -1129,6 +1188,42 @@
                                     <div class="checkbox-option active">
                                         <input type="checkbox" id="qaaCombineYears" name="qaaCombineYears" checked>
                                         <label for="qaaCombineYears">Combine years</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Test Configuration -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Test Configuration</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Test Years:</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-option active">
+                                        <input type="checkbox" id="test-year-2014-2015" value="2014-2015" checked>
+                                        <label for="test-year-2014-2015">2014-2015</label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="test-year-2015-2016" value="2015-2016">
+                                        <label for="test-year-2015-2016">2015-2016</label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="test-year-2016-2017" value="2016-2017">
+                                        <label for="test-year-2016-2017">2016-2017</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card-option">
+                                <label class="option-label">Test Options:</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-option active">
+                                        <input type="checkbox" id="include-status-tests" checked>
+                                        <label for="include-status-tests">Include Status Testing</label>
                                     </div>
                                 </div>
                             </div>
@@ -1589,6 +1684,90 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Test Results Tab -->
+            <div class="tab-content" id="testResultsTab">
+                <div class="dashboard-grid">
+                    <!-- Test Configuration -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Test Configuration</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-option">
+                                <label class="option-label">Test Years:</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-option active">
+                                        <input type="checkbox" id="test-results-year-2014-2015" value="2014-2015" checked>
+                                        <label for="test-results-year-2014-2015">2014-2015 <span class="file-status" id="file-status-2014-2015">✅ Available</span></label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="test-results-year-2015-2016" value="2015-2016">
+                                        <label for="test-results-year-2015-2016">2015-2016 <span class="file-status" id="file-status-2015-2016">✅ Available</span></label>
+                                    </div>
+                                    <div class="checkbox-option">
+                                        <input type="checkbox" id="test-results-year-2016-2017" value="2016-2017">
+                                        <label for="test-results-year-2016-2017">2016-2017 <span class="file-status" id="file-status-2016-2017">✅ Available</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-option">
+                                <label class="option-label">Options:</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-option active">
+                                        <input type="checkbox" id="test-include-status-tests" checked>
+                                        <label for="test-include-status-tests">Include Status Testing</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="action-panel">
+                                <button class="btn btn-primary" id="runAutomaticTestsBtn">
+                                    <span class="btn-icon">🧪</span>
+                                    Run Automatic Tests
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Available Test Files -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">Available Test Files</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="test-files-status">
+                                <ul>
+                                    <li>✅ test_data_2014_2015.xlsx<br><small class="text-muted">251 graduates: 162M, 89F</small></li>
+                                    <li>✅ test_data_2015_2016.xlsx<br><small class="text-muted">285 graduates: 180M, 105F</small></li>
+                                    <li>✅ test_data_2016_2017.xlsx<br><small class="text-muted">320 graduates: 200M, 120F</small></li>
+                                </ul>
+                                <div style="background: #e3f2fd; padding: 0.75rem; border-radius: 6px; margin-top: 1rem;">
+                                    <p style="margin: 0; font-size: 0.9rem; color: #1976d2;"><strong>🎯 Automatic System:</strong> No manual uploads needed!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div class="card col-4">
+                        <div class="card-header">
+                            <div class="card-title">How to Use</div>
+                        </div>
+                        <div class="card-body">
+                            <ol style="margin: 0; padding-left: 1.2rem;">
+                                <li>Select test years you want to run</li>
+                                <li>Choose whether to include status testing</li>
+                                <li>Click "Run Automatic Tests"</li>
+                                <li><strong>Results open in a new tab</strong></li>
+                            </ol>
+                            <div style="background: #f3e5f5; padding: 0.75rem; border-radius: 6px; margin-top: 1rem;">
+                                <p style="margin: 0; font-size: 0.9rem; color: #7b1fa2;"><strong>🚀 Sequential Testing:</strong> Multiple years run automatically in a dedicated results page.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1825,7 +2004,12 @@
                     
                     // Update active content
                     tabContents.forEach(content => content.classList.remove('active'));
-                    document.getElementById(`${tabId}Tab`).classList.add('active');
+                    const targetTab = document.getElementById(`${tabId}Tab`);
+                    if (targetTab) {
+                        targetTab.classList.add('active');
+                    } else {
+                        console.error(`Tab not found: ${tabId}Tab`);
+                    }
                 });
             });
             
@@ -1892,6 +2076,12 @@
                     window.location.href = `/download/${qaaFilename}`;
                 }
             });
+            
+            // Test Results tab elements
+            const runAutomaticTestsBtn = document.getElementById('runAutomaticTestsBtn');
+            
+            // Test Results event listeners
+            runAutomaticTestsBtn.addEventListener('click', runAutomaticTests);
             
             // Alumni List tab elements
             const listColleges = document.getElementById('listColleges');
@@ -2602,8 +2792,24 @@
         }
         
         function runQaaTests() {
-            if (!sessionId) {
-                showAlert(document.getElementById('qaaAlert'), 'No session available. Please upload the test file first.', 'alert-danger');
+            // Show deprecation notice and redirect to new Test Results tab
+            showAlert(document.getElementById('qaaAlert'), 'This test method is deprecated. Please use the new "Test Results" tab for automatic testing with no file upload required.', 'alert-warning');
+            
+            // Automatically switch to Test Results tab
+            setTimeout(() => {
+                document.querySelector('[data-tab="testResults"]').click();
+            }, 2000);
+            
+            return;
+            
+            // Get selected test years
+            const testYears = Array.from(document.querySelectorAll('[id^="test-year-"]:checked'))
+                                   .map(cb => cb.value);
+            
+            const includeStatusTests = document.getElementById('include-status-tests').checked;
+            
+            if (testYears.length === 0) {
+                showAlert(document.getElementById('qaaAlert'), 'Please select at least one test year.', 'alert-warning');
                 return;
             }
             
@@ -2624,7 +2830,8 @@
             const loaderText = qaaLoader.querySelector('span');
             const originalText = loaderText ? loaderText.textContent : '';
             if (loaderText) {
-                loaderText.textContent = 'Running QAA Report Tests...';
+                const yearText = testYears.length > 1 ? 'Multi-Year' : testYears[0];
+                loaderText.textContent = `Running ${yearText} QAA Report Tests...`;
             }
             
             fetch('/run_tests', {
@@ -2634,7 +2841,8 @@
                 },
                 body: JSON.stringify({
                     session_id: sessionId,
-                    test_year: '2014-2015'
+                    test_years: testYears,
+                    include_status_tests: includeStatusTests
                 })
             })
             .then(response => response.json())
@@ -2649,7 +2857,7 @@
                 if (data.error) {
                     showAlert(qaaAlert, data.error, 'alert-danger');
                 } else {
-                    // Show test results
+                    // Show test results with enhanced formatting
                     const alertClass = data.overall_passed ? 'alert-success' : 'alert-warning';
                     showAlert(qaaAlert, `<pre>${data.formatted_results}</pre>`, alertClass);
                 }
@@ -2662,6 +2870,168 @@
                 runTestsBtn.disabled = false;
                 generateQaaBtn.disabled = false;
                 showAlert(qaaAlert, 'Error running tests: ' + error.message, 'alert-danger');
+            });
+        }
+        
+        function runAutomaticTests() {
+            // Get selected test years
+            const testYears = Array.from(document.querySelectorAll('[id^="test-results-year-"]:checked'))
+                                   .map(cb => cb.value);
+            
+            const includeStatusTests = document.getElementById('test-include-status-tests').checked;
+            
+            if (testYears.length === 0) {
+                alert('Please select at least one test year.');
+                return;
+            }
+            
+            // Disable button to prevent multiple runs
+            runAutomaticTestsBtn.disabled = true;
+            runAutomaticTestsBtn.textContent = 'Running Tests...';
+            
+            // Open a new tab for results
+            const resultsWindow = window.open('', '_blank');
+            setupResultsPage(resultsWindow, testYears);
+            
+            // Run tests sequentially
+            runTestsInNewTab(resultsWindow, testYears, includeStatusTests, 0);
+        }
+        
+        function setupResultsPage(window, testYears) {
+            window.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Test Results - WebAlumni</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            margin: 20px; 
+                            background: #f5f5f5;
+                        }
+                        .header { 
+                            background: #4a6fff; 
+                            color: white; 
+                            padding: 20px; 
+                            border-radius: 8px; 
+                            margin-bottom: 20px;
+                        }
+                        .year-result { 
+                            background: white; 
+                            border: 1px solid #ddd; 
+                            border-radius: 8px; 
+                            margin-bottom: 20px; 
+                            overflow: hidden;
+                        }
+                        .year-header { 
+                            background: #f8f9fa; 
+                            padding: 15px; 
+                            border-bottom: 1px solid #ddd; 
+                            font-weight: bold;
+                        }
+                        .year-content { 
+                            padding: 20px; 
+                        }
+                        pre { 
+                            background: #f8f9fa; 
+                            padding: 15px; 
+                            border-radius: 4px; 
+                            white-space: pre-wrap; 
+                            font-size: 14px; 
+                            line-height: 1.5;
+                        }
+                        .status { 
+                            padding: 10px; 
+                            margin: 10px 0; 
+                            border-radius: 4px; 
+                            background: #e3f2fd;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>🧪 WebAlumni Test Results</h1>
+                        <p>Testing ${testYears.length} year(s): ${testYears.join(', ')}</p>
+                        <p>Started at: ${new Date().toLocaleString()}</p>
+                    </div>
+                    <div id="status" class="status">Initializing tests...</div>
+                    <div id="results"></div>
+                </body>
+                </html>
+            `);
+        }
+        
+        function runTestsInNewTab(window, testYears, includeStatusTests, currentIndex) {
+            const statusDiv = window.document.getElementById('status');
+            const resultsDiv = window.document.getElementById('results');
+            
+            if (currentIndex >= testYears.length) {
+                statusDiv.innerHTML = '✅ All tests completed successfully!';
+                statusDiv.style.background = '#e8f5e8';
+                
+                // Re-enable button
+                runAutomaticTestsBtn.disabled = false;
+                runAutomaticTestsBtn.innerHTML = '<span class="btn-icon">🧪</span> Run Automatic Tests';
+                return;
+            }
+            
+            const testYear = testYears[currentIndex];
+            statusDiv.innerHTML = `Testing ${testYear}... (${currentIndex + 1}/${testYears.length})`;
+            
+            // Load test file
+            fetch('/load_test_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ test_year: testYear })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                
+                statusDiv.innerHTML = `Running tests for ${testYear}... (${currentIndex + 1}/${testYears.length})`;
+                
+                return fetch('/run_tests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: data.session_id,
+                        test_years: [testYear],
+                        include_status_tests: includeStatusTests
+                    })
+                });
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                
+                // Add results to the page
+                const resultDiv = window.document.createElement('div');
+                resultDiv.className = 'year-result';
+                resultDiv.innerHTML = `
+                    <div class="year-header">📅 ${testYear} Test Results</div>
+                    <div class="year-content">
+                        <pre>${data.formatted_results || JSON.stringify(data.test_results, null, 2)}</pre>
+                    </div>
+                `;
+                resultsDiv.appendChild(resultDiv);
+                
+                // Continue with next year
+                setTimeout(() => runTestsInNewTab(window, testYears, includeStatusTests, currentIndex + 1), 1000);
+            })
+            .catch(error => {
+                // Add error to results
+                const errorDiv = window.document.createElement('div');
+                errorDiv.className = 'year-result';
+                errorDiv.innerHTML = `
+                    <div class="year-header">❌ ${testYear} Test Error</div>
+                    <div class="year-content">
+                        <pre>Error: ${error.message}</pre>
+                    </div>
+                `;
+                resultsDiv.appendChild(errorDiv);
+                
+                // Continue with next year
+                setTimeout(() => runTestsInNewTab(window, testYears, includeStatusTests, currentIndex + 1), 1000);
             });
         }
         
