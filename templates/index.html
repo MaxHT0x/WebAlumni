@@ -299,6 +299,31 @@
             max-height: 100%;
         }
         
+        /* Remove height constraints for QAA tab to allow cards to grow */
+        #qaaTab .dashboard-grid {
+            max-height: none;
+            min-height: calc(100vh - 120px);
+        }
+        
+        /* Increase height for selection cards in QAA Report */
+        #qaaTab .col-4 .card {
+            min-height: 600px;
+        }
+        
+        /* Increase multi-select height in QAA tab to utilize extra card space */
+        #qaaTab .multi-select {
+            height: 200px;
+        }
+        
+        /* Add spacing to push Preview and Generate Report down */
+        #qaaTab .col-6:first-of-type {
+            margin-top: 3rem;
+        }
+        
+        #qaaTab .col-6:last-of-type {
+            margin-top: 0rem;
+        }
+        
         .card-header {
             padding: 0.875rem 1.25rem;
             border-bottom: 1px solid var(--gray-200);
@@ -483,10 +508,10 @@
             border: 1px solid var(--gray-200);
             box-shadow: var(--shadow-sm);
             overflow: hidden;
-            height: 100%;
+            height: 450px;
             display: flex;
             flex-direction: column;
-            max-height: calc(100vh - 150px);
+            max-height: 450px;
         }
         
         .preview-header {
@@ -517,9 +542,9 @@
             overflow-y: auto;
             flex: 1;
             background: var(--gray-50);
-            height: 200px;
-            min-height: 200px;
-            max-height: 300px;
+            height: 400px;
+            min-height: 400px;
+            max-height: 400px;
             overflow-y: auto;
         }
         
@@ -796,7 +821,7 @@
         /* Grid column spans */
         .col-4 {
             grid-column: span 4;
-            max-height: calc(100vh - 150px);
+            max-height: calc(100vh - 50px);
             display: flex;
             flex-direction: column;
         }
@@ -1194,42 +1219,6 @@
                         </div>
                     </div>
                     
-                    <!-- Test Configuration -->
-                    <div class="card col-4">
-                        <div class="card-header">
-                            <div class="card-title">Test Configuration</div>
-                        </div>
-                        <div class="card-body">
-                            <div class="card-option">
-                                <label class="option-label">Test Years:</label>
-                                <div class="checkbox-group">
-                                    <div class="checkbox-option active">
-                                        <input type="checkbox" id="test-year-2014-2015" value="2014-2015" checked>
-                                        <label for="test-year-2014-2015">2014-2015</label>
-                                    </div>
-                                    <div class="checkbox-option">
-                                        <input type="checkbox" id="test-year-2015-2016" value="2015-2016">
-                                        <label for="test-year-2015-2016">2015-2016</label>
-                                    </div>
-                                    <div class="checkbox-option">
-                                        <input type="checkbox" id="test-year-2016-2017" value="2016-2017">
-                                        <label for="test-year-2016-2017">2016-2017</label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="card-option">
-                                <label class="option-label">Test Options:</label>
-                                <div class="checkbox-group">
-                                    <div class="checkbox-option active">
-                                        <input type="checkbox" id="include-status-tests" checked>
-                                        <label for="include-status-tests">Include Status Testing</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- Preview card -->
                     <div class="col-6">
                         <div class="preview-card">
@@ -1269,10 +1258,6 @@
                                     <button class="btn btn-success" id="generateQaaBtn">
                                         <span class="btn-icon">📊</span>
                                         Generate QAA Report
-                                    </button>
-                                    <button class="btn btn-primary" id="runTestsBtn">
-                                        <span class="btn-icon">🧪</span>
-                                        Run Tests
                                     </button>
                                 </div>
                             </div>
@@ -2021,7 +2006,6 @@
             const qaaCombineAll = document.getElementById('qaaCombineAll');
             const qaaCombineYears = document.getElementById('qaaCombineYears');
             const generateQaaBtn = document.getElementById('generateQaaBtn');
-            const runTestsBtn = document.getElementById('runTestsBtn');
             const qaaLoader = document.getElementById('qaaLoader');
             const qaaAlert = document.getElementById('qaaAlert');
             const qaaDownload = document.getElementById('qaaDownload');
@@ -2069,7 +2053,6 @@
             });
             
             generateQaaBtn.addEventListener('click', generateQaaReport);
-            runTestsBtn.addEventListener('click', runQaaTests);
             
             qaaDownloadBtn.addEventListener('click', function() {
                 if (qaaFilename) {
@@ -2791,87 +2774,6 @@
             });
         }
         
-        function runQaaTests() {
-            // Show deprecation notice and redirect to new Test Results tab
-            showAlert(document.getElementById('qaaAlert'), 'This test method is deprecated. Please use the new "Test Results" tab for automatic testing with no file upload required.', 'alert-warning');
-            
-            // Automatically switch to Test Results tab
-            setTimeout(() => {
-                document.querySelector('[data-tab="testResults"]').click();
-            }, 2000);
-            
-            return;
-            
-            // Get selected test years
-            const testYears = Array.from(document.querySelectorAll('[id^="test-year-"]:checked'))
-                                   .map(cb => cb.value);
-            
-            const includeStatusTests = document.getElementById('include-status-tests').checked;
-            
-            if (testYears.length === 0) {
-                showAlert(document.getElementById('qaaAlert'), 'Please select at least one test year.', 'alert-warning');
-                return;
-            }
-            
-            // Show loader and hide alerts/download
-            const qaaLoader = document.getElementById('qaaLoader');
-            const qaaAlert = document.getElementById('qaaAlert');
-            const qaaDownload = document.getElementById('qaaDownload');
-            const runTestsBtn = document.getElementById('runTestsBtn');
-            const generateQaaBtn = document.getElementById('generateQaaBtn');
-            
-            qaaLoader.style.display = 'flex';
-            qaaAlert.style.display = 'none';
-            qaaDownload.style.display = 'none';
-            runTestsBtn.disabled = true;
-            generateQaaBtn.disabled = true;
-            
-            // Update loader text for testing
-            const loaderText = qaaLoader.querySelector('span');
-            const originalText = loaderText ? loaderText.textContent : '';
-            if (loaderText) {
-                const yearText = testYears.length > 1 ? 'Multi-Year' : testYears[0];
-                loaderText.textContent = `Running ${yearText} QAA Report Tests...`;
-            }
-            
-            fetch('/run_tests', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    session_id: sessionId,
-                    test_years: testYears,
-                    include_status_tests: includeStatusTests
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                qaaLoader.style.display = 'none';
-                if (loaderText) {
-                    loaderText.textContent = originalText;
-                }
-                runTestsBtn.disabled = false;
-                generateQaaBtn.disabled = false;
-                
-                if (data.error) {
-                    showAlert(qaaAlert, data.error, 'alert-danger');
-                } else {
-                    // Show test results with enhanced formatting
-                    const alertClass = data.overall_passed ? 'alert-success' : 'alert-warning';
-                    showAlert(qaaAlert, `<pre>${data.formatted_results}</pre>`, alertClass);
-                }
-            })
-            .catch(error => {
-                qaaLoader.style.display = 'none';
-                if (loaderText) {
-                    loaderText.textContent = originalText;
-                }
-                runTestsBtn.disabled = false;
-                generateQaaBtn.disabled = false;
-                showAlert(qaaAlert, 'Error running tests: ' + error.message, 'alert-danger');
-            });
-        }
         
         function runAutomaticTests() {
             // Get selected test years
