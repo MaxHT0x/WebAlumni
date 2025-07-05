@@ -14,7 +14,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from copy import copy
-from test_validator import QAATestValidator, format_test_results_for_display, format_multi_year_test_results_for_display
+from tests.validation.test_validator import QAATestValidator, format_test_results_for_display, format_multi_year_test_results_for_display
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -1683,9 +1683,9 @@ def load_test_file():
         
         # Map test years to their corresponding files
         test_file_mapping = {
-            '2014-2015': 'test_data_2014_2015.xlsx',
-            '2015-2016': 'test_data_2015_2016.xlsx', 
-            '2016-2017': 'test_data_2016_2017.xlsx'
+            '2014-2015': 'tests/data/test_data_2014_2015.xlsx',
+            '2015-2016': 'tests/data/test_data_2015_2016.xlsx', 
+            '2016-2017': 'tests/data/test_data_2016_2017.xlsx'
         }
         
         if test_year not in test_file_mapping:
@@ -1702,7 +1702,9 @@ def load_test_file():
         session_id = uuid.uuid4().hex
         
         # Copy the test file to uploads directory (to follow existing pattern)
-        uploaded_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{session_id}_{test_filename}")
+        # Extract just the filename part (without the path)
+        just_filename = os.path.basename(test_filename)
+        uploaded_file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{session_id}_{just_filename}")
         shutil.copy2(test_file_path, uploaded_file_path)
         
         # Process the file using the same logic as the upload endpoint
@@ -1711,7 +1713,7 @@ def load_test_file():
         # Add the session ID to the result
         if isinstance(result, dict) and "error" not in result:
             result["session_id"] = session_id
-            result["test_file_loaded"] = test_filename
+            result["test_file_loaded"] = just_filename
             result["test_year"] = test_year
             
         return jsonify(result)

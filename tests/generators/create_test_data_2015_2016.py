@@ -165,7 +165,7 @@ def create_test_data_2015_2016():
     df_sorted = df.sort_values(['Year/Semester of Graduation', 'College', 'Gender'])
     
     # Save to Excel file
-    output_file = "/home/rakanlinux/coolProjects/WebAlumni/test_data_2015_2016.xlsx"
+    output_file = "/home/rakanlinux/coolProjects/WebAlumni/tests/data/test_data_2015_2016.xlsx"
     df_sorted.to_excel(output_file, index=False, sheet_name="Alumni_Data")
     
     print(f"\nCreated test file: {output_file}")

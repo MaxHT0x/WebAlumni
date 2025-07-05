@@ -13,7 +13,7 @@ from typing import Dict, List, Union, Any
 class QAATestValidator:
     """Validates QAA report Excel files against expected results"""
     
-    def __init__(self, expectations_file: str = "/home/rakanlinux/coolProjects/WebAlumni/test_expectations.json"):
+    def __init__(self, expectations_file: str = "/home/rakanlinux/coolProjects/WebAlumni/tests/validation/test_expectations.json"):
         """Initialize validator with expected results"""
         self.expectations_file = expectations_file
         self.expectations = self._load_expectations()

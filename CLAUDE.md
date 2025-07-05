@@ -172,17 +172,33 @@ WebAlumni/
 ├── app.py                        # Main Flask application
 ├── CLAUDE.md                     # AI development guidance
 ├── README.md                     # Setup and usage documentation
-├── TEST_SYSTEM_README.md         # Test system documentation
 ├── requirements.txt              # Python dependencies
 ├── templates/
 │   └── index.html               # Frontend SPA template
 ├── uploads/                     # Temporary uploaded files (gitignored)
 ├── generated_files/             # Generated reports (gitignored)
 ├── venv/                        # Python virtual environment (gitignored)
-├── create_test_data_2014_2015.py # Test data generation script
-├── test_data_2014_2015.xlsx      # Sample test data file
-├── test_expectations.json        # Test validation expectations
-└── test_validator.py             # Test validation script
+└── tests/                       # Test system directory
+    ├── data/                    # Test data files
+    │   ├── test_data_2014_2015.xlsx
+    │   ├── test_data_2015_2016.xlsx
+    │   └── test_data_2016_2017.xlsx
+    ├── generators/              # Test data generation scripts
+    │   ├── create_test_data_2014_2015.py
+    │   ├── create_test_data_2015_2016.py
+    │   └── create_test_data_2016_2017.py
+    ├── validation/              # Test validation system
+    │   ├── test_validator.py
+    │   └── test_expectations.json
+    ├── docs/                    # Test documentation
+    │   ├── TEST_SYSTEM_README.md
+    │   └── TEST_EXTENSION_PLAN.md
+    └── assets/                  # Test assets and images
+        ├── chrome_bf5eTGDxQ6.png
+        ├── pic1.png
+        ├── pic2.png
+        ├── pic3.png
+        └── Unique alumni database values.txt
 ```
 
 ## Data Models

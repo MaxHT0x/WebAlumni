@@ -20,7 +20,7 @@ This test system provides **fully automated testing** for the WebAlumni QAA repo
 ### 1. **Navigate to Test Results Tab**
 - Open the web application
 - Click on the "Test Results" tab (5th tab in navigation)
-- No file uploads needed - test files are automatically loaded from project root:
+- No file uploads needed - test files are automatically loaded from tests/data/:
   - `test_data_2014_2015.xlsx` (251 graduates: 162M, 89F)
   - `test_data_2015_2016.xlsx` (285 graduates: 180M, 105F)
   - `test_data_2016_2017.xlsx` (320 graduates: 200M, 120F)
