@@ -382,7 +382,7 @@ def get_workplace_statistics(df, colleges, years, degree_option, gender_option, 
     empty_df = filtered_df[empty_mask]
 
     # Get top employers (excluding empty values)
-    top_employers = valid_df["Normalized_Workplace"].value_counts().head(10)
+    top_employers = valid_df["Normalized_Workplace"].value_counts().head(30)
 
     # Get empty value statistics
     empty_stats = empty_df["Normalized_Workplace"].value_counts()
@@ -777,6 +777,51 @@ def create_gender_nationality_breakdown(filtered_df, writer, colleges):
         except Exception as e:
             print(f"Error creating breakdown sheet: {str(e)}")
 
+def create_nationality_breakdown(filtered_df, writer, colleges):
+    """
+    Create a nationality breakdown sheet showing count of graduates per nationality
+    This adds a new sheet to the existing Excel writer
+    """
+    # Create a deep copy to avoid modifying the original dataframe
+    breakdown_df = filtered_df.copy(deep=True)
+    
+    # Check if Nationality column exists
+    if "Nationality" not in breakdown_df.columns:
+        print("Warning: Nationality column not found in dataset")
+        return
+    
+    # Create a sheet for nationality breakdown
+    sheet_name = "Overall Nationality Breakdown"
+    
+    try:
+        # Clean and count nationalities
+        nationality_counts = breakdown_df["Nationality"].fillna("Unknown").str.strip()
+        nationality_counts = nationality_counts.value_counts().reset_index()
+        nationality_counts.columns = ["Nationality", "Count"]
+        
+        # Sort by count descending for better readability
+        nationality_counts = nationality_counts.sort_values("Count", ascending=False)
+        
+        # Write to Excel
+        nationality_counts.to_excel(writer, sheet_name=sheet_name, index=False)
+        
+        # Format the sheet
+        worksheet = writer.sheets[sheet_name]
+        
+        # Auto-adjust column widths
+        for idx, col in enumerate(nationality_counts.columns):
+            max_len = max(nationality_counts[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(idx, idx, max_len)
+        
+        # Add a title and note
+        total_graduates = len(breakdown_df)
+        worksheet.write(nationality_counts.shape[0] + 2, 0, f"Overall Nationality Breakdown - Total Graduates: {total_graduates}")
+        worksheet.write(nationality_counts.shape[0] + 3, 0, "Note: This breakdown shows the count of graduates by nationality.")
+        print("Successfully created nationality breakdown sheet")
+        
+    except Exception as e:
+        print(f"Error creating nationality breakdown sheet: {str(e)}")
+
 def process_qaa_report(session_id, colleges, years, degree_option, combine_all, combine_years, gender_option, nationality_option=None, mode_option="detailed"):
     """Generate QAA report based on given parameters"""
     try:
@@ -1018,6 +1063,11 @@ def process_qaa_report(session_id, colleges, years, degree_option, combine_all, 
                     print("Adding gender/nationality breakdown sheet...")
                     create_gender_nationality_breakdown(filtered_df_all, breakdown_writer, colleges)
                     print("Breakdown sheet added successfully")
+                    
+                    # Create the overall nationality breakdown sheet
+                    print("Adding overall nationality breakdown sheet...")
+                    create_nationality_breakdown(filtered_df_all, breakdown_writer, colleges)
+                    print("Overall nationality breakdown sheet added successfully")
         except Exception as e:
             print(f"Failed to create gender/nationality breakdown: {str(e)}")
             

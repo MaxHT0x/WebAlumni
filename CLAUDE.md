@@ -105,6 +105,9 @@ pip install -r requirements.txt
 - Respects all filter options (Degree, Gender, Nationality)
 - Generates comprehensive reports with employment percentages
 - Creates detailed worksheets by college/year or combined views
+- **Additional Breakdown Sheets**:
+  - `Gender_Nationality_Breakdown`: Employment statistics by gender and nationality
+  - `Overall Nationality Breakdown`: Simple count of graduates per nationality (sorted by count)
 
 **Simple Mode**
 - Basic graduate counts with gender breakdown only
@@ -277,3 +280,15 @@ session_data[session_id] = {
 - Simple mode uses case-insensitive text processing for robust data handling
 - Academic year extraction handles multiple graduation term formats
 - Mode-specific filtering logic: Simple mode ignores demographic filters, Detailed mode respects all filters
+
+### QAA Report Breakdown Sheets
+
+**Breakdown Sheet Generation Pattern**
+- Breakdown sheets are added to Detailed mode reports only using a separate ExcelWriter in append mode
+- All breakdown sheets use the same `filtered_df_all` dataframe to ensure consistent filtering
+- Each breakdown function includes error handling to prevent breaking the main report generation
+
+**Available Breakdown Functions**
+- `create_gender_nationality_breakdown()`: Creates employment statistics by gender and nationality categories
+- `create_nationality_breakdown()`: Creates simple nationality count breakdown, sorted by count descending
+- Both functions accept `(filtered_df, writer, colleges)` parameters and handle missing data gracefully
